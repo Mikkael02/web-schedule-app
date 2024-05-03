@@ -1,0 +1,6 @@
+<h1>Plan zajęć</h1>
+<ul>
+    {% for schedule in schedules %}
+    <li>{{ schedule.course }} - {{ schedule.room.name }} - {{ schedule.teacher.first_name }} {{ schedule.teacher.last_name }} - {{ schedule.time_slot }}</li>
+    {% endfor %}
+</ul>
