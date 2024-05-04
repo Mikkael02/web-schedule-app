@@ -4,4 +4,4 @@ from .models import Schedule
 class ScheduleForm(ModelForm):
     class Meta:
         model = Schedule
-        fields = ['course', 'room', 'teacher', 'time_slot']
+        fields = ['course', 'group', 'room', 'teacher', 'day_of_week', 'start_time', 'end_time']
