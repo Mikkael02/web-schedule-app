@@ -5,7 +5,9 @@ class Course(models.Model):
         ('lecture', 'Wykład'),
         ('lab', 'Laboratorium'),
         ('seminar', 'Seminarium'),
-        # Dodaj więcej typów kursów zgodnie z potrzebami
+        ('project', 'Projekt'),
+        ('exercises', 'Ćwiczenia'),
+        ('sport', 'Ćwiczenia sportowe'),
     )
 
     name = models.CharField(max_length=100)

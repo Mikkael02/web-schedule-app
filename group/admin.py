@@ -1,3 +1,8 @@
 from django.contrib import admin
+from .models import Group
 
-# Register your models here.
+class GroupAdmin(admin.ModelAdmin):
+    list_display = ('name', 'department', 'size')
+    search_fields = ('name',)
+
+admin.site.register(Group, GroupAdmin)

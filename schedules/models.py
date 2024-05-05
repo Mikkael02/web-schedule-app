@@ -9,10 +9,16 @@ def get_default_group():
     return default_group.id
 
 class Schedule(models.Model):
+    WEEK_TYPE_CHOICES = (
+        ('weekly', 'Co tydzień'),
+        ('even', 'Tygodnie parzyste'),
+        ('odd', 'Tygodnie nieparzyste'),
+    )
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     group = models.ForeignKey(Group, on_delete=models.CASCADE, default=get_default_group)
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
+    week_type = models.CharField(max_length=10, choices=WEEK_TYPE_CHOICES, default='weekly')
     day_of_week = models.CharField(
         max_length=10,
         choices=[
