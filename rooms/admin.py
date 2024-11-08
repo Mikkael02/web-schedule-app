@@ -3,7 +3,7 @@ from .models import Room, RoomType, Equipment
 
 
 class RoomAdmin(admin.ModelAdmin):
-    list_display = ('name', 'capacity', 'list_room_types', 'list_equipment')
+    list_display = ('name', 'capacity', 'list_room_types', 'list_equipment', 'institution')
 
     def list_room_types(self, obj):
         return ", ".join([room_type.type for room_type in obj.room_types.all()])

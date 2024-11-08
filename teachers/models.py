@@ -1,5 +1,6 @@
 from django.db import models
 from course.models import Course
+from institutions.models import Institution
 
 class Teacher(models.Model):
     TITLES = (
@@ -9,6 +10,7 @@ class Teacher(models.Model):
         ('dr hab. inż.', 'dr hab. inż.'),
         ('prof. dr hab. inż.', 'prof. dr hab. inż.'),
     )
+    institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='teachers', null=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)

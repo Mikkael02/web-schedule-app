@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ institution.name }} - Plan Zajęć</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/calendar.css' %}">
+</head>
+<body>
+    <div id="sidebar">
+        <h3>{{ institution.name }}</h3>
+        <ul id="sidebar-menu">
+            <li class="menu-item">
+                <span>Wydziały</span>
+                <ul class="submenu">
+                    {% for faculty in faculties %}
+                        <li class="submenu-item" data-type="faculty" data-id="{{ faculty.id }}">
+                            <span>{{ faculty.name }}</span>
+                            <ul class="nested-submenu"></ul>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </li>
+            <li class="menu-item">
+                <span>Sale</span>
+                <ul class="submenu" id="rooms-list">
+                    {% for room in rooms %}
+                        <li class="submenu-item" data-type="room" data-id="{{ room.id }}"><span>{{ room.name }}</span></li>
+                    {% endfor %}
+                </ul>
+            </li>
+            <li class="menu-item">
+                <span>Wykładowcy</span>
+                <ul class="submenu" id="teachers-list">
+                    {% for teacher in teachers %}
+                        <li class="submenu-item" data-type="teacher" data-id="{{ teacher.id }}"><span>{{ teacher.first_name }} {{ teacher.last_name }}</span></li>
+                    {% endfor %}
+                </ul>
+            </li>
+        </ul>
+    </div>
+    <div id="content">
+        <header>
+            <h1 id="page-title">Plan dla: </h1>
+        </header>
+        <div id="main-content">
+            <div id="schedule" class="calendar">
+                <div class="calendar-header">
+                    <div class="time-label"></div>
+                    <div class="day">Poniedziałek</div>
+                    <div class="day">Wtorek</div>
+                    <div class="day">Środa</div>
+                    <div class="day">Czwartek</div>
+                    <div class="day">Piątek</div>
+                    <div class="day">Sobota</div>
+                    <div class="day">Niedziela</div>
+                </div>
+                <div class="calendar-body">
+                    <div class="time-label">
+                        <div class="hour">8:00</div>
+                        <div class="hour">9:00</div>
+                        <div class="hour">10:00</div>
+                        <div class="hour">11:00</div>
+                        <div class="hour">12:00</div>
+                        <div class="hour">13:00</div>
+                        <div class="hour">14:00</div>
+                        <div class="hour">15:00</div>
+                        <div class="hour">16:00</div>
+                        <div class="hour">17:00</div>
+                        <div class="hour">18:00</div>
+                        <div class="hour">19:00</div>
+                        <div class="hour">20:00</div>
+                        <div class="hour">21:00</div>
+                    </div>
+                    <div class="day-column" id="monday"></div>
+                    <div class="day-column" id="tuesday"></div>
+                    <div class="day-column" id="wednesday"></div>
+                    <div class="day-column" id="thursday"></div>
+                    <div class="day-column" id="friday"></div>
+                    <div class="day-column" id="saturday"></div>
+                    <div class="day-column" id="sunday"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{% static 'js/scripts.js' %}"></script>
+</body>
+</html>

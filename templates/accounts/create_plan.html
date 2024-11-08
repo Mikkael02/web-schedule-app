@@ -1,0 +1,24 @@
+<h1 class="mt-4">Utwórz nowy plan</h1>
+<form method="post" enctype="multipart/form-data" class="mt-3">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="name" class="form-label">Nazwa:</label>
+        <input type="text" id="name" name="name" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="type" class="form-label">Typ:</label>
+        <select id="type" name="type" class="form-select">
+            <option value="primary">Szkoła Podstawowa</option>
+            <option value="secondary">Szkoła Średnia</option>
+            <option value="higher">Szkoła Wyższa</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="logo" class="form-label">Logo:</label>
+        <input type="file" id="logo" name="logo" class="form-control">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Utwórz</button>
+</form>

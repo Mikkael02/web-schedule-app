@@ -3,6 +3,7 @@ from rooms.models import Room
 from teachers.models import Teacher
 from course.models import Course
 from group.models import Group
+from institutions.models import Institution
 
 def get_default_group():
     default_group = Group.objects.get_or_create(name="Default Group")[0]
@@ -14,6 +15,7 @@ class Schedule(models.Model):
         ('even', 'Tygodnie parzyste'),
         ('odd', 'Tygodnie nieparzyste'),
     )
+    institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='schedules', null=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     group = models.ForeignKey(Group, on_delete=models.CASCADE, default=get_default_group)
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
