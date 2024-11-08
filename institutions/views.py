@@ -101,9 +101,10 @@ def delete_plan(request, plan_id):
 # Zarządzanie salami
 
 def manage_rooms(request, institution_id):
-    request.session['institution_id'] = institution_id  # Przechowaj ID instytucji
     institution = get_object_or_404(Institution, id=institution_id)
     rooms = Room.objects.filter(institution=institution)
+    room_types = RoomType.objects.filter(owner=request.user)
+    equipment = Equipment.objects.filter(owner=request.user)
 
     if request.method == 'POST':
         form = RoomForm(request.POST)
@@ -111,7 +112,8 @@ def manage_rooms(request, institution_id):
             room = form.save(commit=False)
             room.institution = institution
             room.save()
-            form.save_m2m()
+            room.room_types.set(request.POST.getlist('room_types'))
+            room.equipment.set(request.POST.getlist('equipment'))
             return redirect('manage_rooms', institution_id=institution.id)
     else:
         form = RoomForm()
@@ -119,6 +121,8 @@ def manage_rooms(request, institution_id):
     return render(request, 'accounts/primary/primary_manage_rooms.html', {
         'institution': institution,
         'rooms': rooms,
+        'room_types': room_types,
+        'equipment': equipment,
         'form': form
     })
 
@@ -167,9 +171,10 @@ def manage_teachers(request, institution_id):
 # Zarządzanie zajęciami
 
 def manage_courses(request, institution_id):
-    request.session['institution_id'] = institution_id  # Przechowaj ID instytucji
     institution = get_object_or_404(Institution, id=institution_id)
     courses = Course.objects.filter(institution=institution)
+    room_types = RoomType.objects.filter(owner=request.user)
+    equipment = Equipment.objects.filter(owner=request.user)
 
     if request.method == 'POST':
         form = CourseForm(request.POST)
@@ -177,7 +182,8 @@ def manage_courses(request, institution_id):
             course = form.save(commit=False)
             course.institution = institution
             course.save()
-            form.save_m2m()
+            course.room_types.set(request.POST.getlist('course_types'))
+            course.equipment.set(request.POST.getlist('equipment'))
             return redirect('manage_courses', institution_id=institution.id)
     else:
         form = CourseForm()
@@ -185,5 +191,7 @@ def manage_courses(request, institution_id):
     return render(request, 'accounts/primary/primary_manage_courses.html', {
         'institution': institution,
         'courses': courses,
+        'room_types': room_types,
+        'equipment': equipment,
         'form': form
     })

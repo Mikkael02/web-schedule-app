@@ -31,6 +31,6 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('api/', include('schedules.urls')),
     path('', TemplateView.as_view(template_name='home.html'), name='home'),
-    path('room-types/', include('room_types.urls')),
+    path('room_types/', include('room_types.urls')),
     path('equipment/', include('equipment.urls')),
 ]

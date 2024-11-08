@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zarządzaj Zajęciami</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -12,12 +11,43 @@
         <h1>Zarządzanie Zajęciami dla {{ institution.name }}</h1>
         <form method="post">
             {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit" class="btn btn-primary">Zapisz zajęcia</button>
-        </form>
+            <div class="mb-3">
+                <label for="name" class="form-label">Nazwa</label>
+                <input type="text" id="name" name="name" class="form-control" required>
+            </div>
 
-        <button type="button" class="btn btn-secondary mt-3" data-bs-toggle="modal" data-bs-target="#addCourseTypeModal">Dodaj Typ Zajęć</button>
-        <button type="button" class="btn btn-secondary mt-3" data-bs-toggle="modal" data-bs-target="#addEquipmentModal">Dodaj Wymagane Wyposażenie</button>
+            <div class="mb-3">
+                <label class="form-label">Nadać typ zajęciom?</label>
+                <input type="checkbox" id="assign_course_type" onchange="toggleCourseType()">
+            </div>
+
+            <div id="courseTypeContainer" style="display: none;">
+                <label for="course_types" class="form-label">Typ Zajęć</label>
+                <select multiple id="course_types" name="course_types" class="form-control">
+                    {% for room_type in room_types %}
+                        <option value="{{ room_type.id }}">{{ room_type.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="btn btn-secondary mt-2" data-bs-toggle="modal" data-bs-target="#addRoomTypeModal">Dodaj Typ Zajęć</button>
+            </div>
+
+            <div class="mb-3 mt-4">
+                <label class="form-label">Dodać wymagane wyposażenie?</label>
+                <input type="checkbox" id="assign_course_equipment" onchange="toggleCourseEquipment()">
+            </div>
+
+            <div id="courseEquipmentContainer" style="display: none;">
+                <label for="course_equipment" class="form-label">Wyposażenie</label>
+                <select multiple id="course_equipment" name="course_equipment" class="form-control">
+                    {% for equip in equipment %}
+                        <option value="{{ equip.id }}">{{ equip.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="btn btn-secondary mt-2" data-bs-toggle="modal" data-bs-target="#addEquipmentModal">Dodaj Wyposażenie</button>
+            </div>
+
+            <button type="submit" class="btn btn-primary mt-4">Zapisz zajęcia</button>
+        </form>
 
         <h2 class="mt-4">Lista Zajęć</h2>
         <table class="table table-striped">
@@ -45,14 +75,14 @@
         </table>
     </div>
 
-    <!-- Modal for Adding Course Type -->
-    <div class="modal fade" id="addCourseTypeModal" tabindex="-1" aria-labelledby="addCourseTypeLabel" aria-hidden="true">
+    <!-- Modal for Adding Room Type -->
+    <div class="modal fade" id="addRoomTypeModal" tabindex="-1" aria-labelledby="addRoomTypeLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <form action="{% url 'add_room_type' %}" method="post">
                     {% csrf_token %}
                     <div class="modal-header">
-                        <h5 class="modal-title" id="addCourseTypeLabel">Dodaj Typ Zajęć</h5>
+                        <h5 class="modal-title" id="addRoomTypeLabel">Dodaj Typ Zajęć</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -71,10 +101,10 @@
     <div class="modal fade" id="addEquipmentModal" tabindex="-1" aria-labelledby="addEquipmentLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form action="{% url 'add_room_type' %}" method="post">
+                <form action="{% url 'add_equipment' %}" method="post">
                     {% csrf_token %}
                     <div class="modal-header">
-                        <h5 class="modal-title" id="addEquipmentLabel">Dodaj Wymagane Wyposażenie</h5>
+                        <h5 class="modal-title" id="addEquipmentLabel">Dodaj Wyposażenie</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -89,7 +119,16 @@
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
+    <script>
+        function toggleCourseType() {
+            document.getElementById('courseTypeContainer').style.display = document.getElementById('assign_course_type').checked ? 'block' : 'none';
+        }
+
+        function toggleCourseEquipment() {
+            document.getElementById('courseEquipmentContainer').style.display = document.getElementById('assign_course_equipment').checked ? 'block' : 'none';
+        }
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
