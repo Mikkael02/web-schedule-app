@@ -20,40 +20,53 @@
                 <input type="number" id="capacity" name="capacity" class="form-control" required>
             </div>
 
+            <!-- Typy sal -->
             <div class="mb-3">
-                <label class="form-label">Nadać typ sali?</label>
-                <input type="checkbox" id="assign_type" onchange="toggleRoomType()">
+                <label class="form-label">Czy nadać typ sali?</label>
+                <select id="room_type_toggle" class="form-select">
+                    <option value="no">Nie</option>
+                    <option value="yes">Tak</option>
+                </select>
             </div>
-
-            <div id="roomTypeContainer" style="display: none;">
-                <label for="room_types" class="form-label">Typy Sali</label>
-                <select multiple id="room_types" name="room_types" class="form-control">
+            <div class="mb-3" id="room_type_section" style="display: none;">
+                <label class="form-label">Typy Sali</label>
+                <div class="form-check">
                     {% for room_type in room_types %}
-                        <option value="{{ room_type.id }}">{{ room_type.name }}</option>
+                        <div>
+                            <input class="form-check-input" type="checkbox" name="room_types" value="{{ room_type.id }}" id="room_type_{{ room_type.id }}">
+                            <label class="form-check-label" for="room_type_{{ room_type.id }}">{{ room_type.name }}</label>
+                        </div>
                     {% endfor %}
+                </div>
+                <a href="{% url 'room_types:manage_room_types' %}" class="btn btn-secondary mt-2">Zarządzaj listą typów sal</a>
+            </div>
+
+            <!-- Wyposażenie -->
+            <div class="mb-3">
+                <label class="form-label">Czy dodać dodatkowe wyposażenie?</label>
+                <select id="equipment_toggle" class="form-select">
+                    <option value="no">Nie</option>
+                    <option value="yes">Tak</option>
                 </select>
-                <button type="button" class="btn btn-secondary mt-2" data-bs-toggle="modal" data-bs-target="#addRoomTypeModal">Dodaj Typ Sali</button>
             </div>
-
-            <div class="mb-3 mt-4">
-                <label class="form-label">Dodać wyposażenie?</label>
-                <input type="checkbox" id="assign_equipment" onchange="toggleEquipment()">
-            </div>
-
-            <div id="equipmentContainer" style="display: none;">
-                <label for="equipment" class="form-label">Wyposażenie</label>
-                <select multiple id="equipment" name="equipment" class="form-control">
+            <div class="mb-3" id="equipment_section" style="display: none;">
+                <label class="form-label">Wyposażenie</label>
+                <div class="form-check">
                     {% for equip in equipment %}
-                        <option value="{{ equip.id }}">{{ equip.name }}</option>
+                        <div>
+                            <input class="form-check-input" type="checkbox" name="equipment" value="{{ equip.id }}" id="equip_{{ equip.id }}">
+                            <label class="form-check-label" for="equip_{{ equip.id }}">{{ equip.name }}</label>
+                        </div>
                     {% endfor %}
-                </select>
-                <button type="button" class="btn btn-secondary mt-2" data-bs-toggle="modal" data-bs-target="#addEquipmentModal">Dodaj Wyposażenie</button>
+                </div>
+                <a href="{% url 'equipment:manage_equipment' %}" class="btn btn-secondary mt-2">Zarządzaj listą wyposażenia</a>
             </div>
 
             <button type="submit" class="btn btn-primary mt-4">Zapisz salę</button>
         </form>
 
-        <h2 class="mt-4">Lista Sal</h2>
+        <!-- Lista istniejących sal -->
+        <h2 class="mt-5">Lista Sal</h2>
         <table class="table table-striped">
             <thead>
                 <tr>
@@ -66,75 +79,30 @@
             </thead>
             <tbody>
                 {% for room in rooms %}
-                <tr>
-                    <td>{{ room.name }}</td>
-                    <td>{{ room.capacity }}</td>
-                    <td>{{ room.room_types.all|join:", " }}</td>
-                    <td>{{ room.equipment.all|join:", " }}</td>
-                    <td>
-                        <a href="#" class="btn btn-warning btn-sm">Edytuj</a>
-                        <a href="#" class="btn btn-danger btn-sm">Usuń</a>
-                    </td>
-                </tr>
+                    <tr>
+                        <td>{{ room.name }}</td>
+                        <td>{{ room.capacity }}</td>
+                        <td>{{ room.room_types.all|join:", " }}</td>
+                        <td>{{ room.equipment.all|join:", " }}</td>
+                        <td>
+                            <a href="#" class="btn btn-warning btn-sm">Edytuj</a>
+                            <a href="#" class="btn btn-danger btn-sm">Usuń</a>
+                        </td>
+                    </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
-    <!-- Modal for Adding Room Type -->
-    <div class="modal fade" id="addRoomTypeModal" tabindex="-1" aria-labelledby="addRoomTypeLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form action="{% url 'add_room_type' %}" method="post">
-                    {% csrf_token %}
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="addRoomTypeLabel">Dodaj Typ Sali</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="text" name="new_type" class="form-control" placeholder="Nazwa typu" required>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Dodaj</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal for Adding Equipment -->
-    <div class="modal fade" id="addEquipmentModal" tabindex="-1" aria-labelledby="addEquipmentLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form action="{% url 'add_equipment' %}" method="post">
-                    {% csrf_token %}
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="addEquipmentLabel">Dodaj Wyposażenie</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="text" name="new_equipment" class="form-control" placeholder="Nazwa wyposażenia" required>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Dodaj</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <script>
-        function toggleRoomType() {
-            document.getElementById('roomTypeContainer').style.display = document.getElementById('assign_type').checked ? 'block' : 'none';
-        }
+        document.getElementById('room_type_toggle').addEventListener('change', function () {
+            document.getElementById('room_type_section').style.display = this.value === 'yes' ? 'block' : 'none';
+        });
 
-        function toggleEquipment() {
-            document.getElementById('equipmentContainer').style.display = document.getElementById('assign_equipment').checked ? 'block' : 'none';
-        }
+        document.getElementById('equipment_toggle').addEventListener('change', function () {
+            document.getElementById('equipment_section').style.display = this.value === 'yes' ? 'block' : 'none';
+        });
     </script>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
