@@ -9,6 +9,14 @@
 <body>
     <div class="container mt-4">
         <h1>Zarządzanie Salami dla {{ institution.name }}</h1>
+
+        <!-- Przycisk Powrotu -->
+        <div class="mb-3">
+            <a href="{% url 'plans' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Powrót do listy planów
+            </a>
+        </div>
+
         <form method="post">
             {% csrf_token %}
             <div class="mb-3">
@@ -85,8 +93,8 @@
                         <td>{{ room.room_types.all|join:", " }}</td>
                         <td>{{ room.equipment.all|join:", " }}</td>
                         <td>
-                            <a href="{% url 'edit_room' institution.id room.id %}" class="btn btn-warning btn-sm">Edytuj</a>
-                            <a href="{% url 'delete_room' institution.id room.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Czy na pewno chcesz usunąć tę salę?');">Usuń</a>
+                             <a href="{% url 'edit_room' institution.id room.id %}" class="btn btn-warning btn-sm">Edytuj</a>
+                             <a href="{% url 'delete_room' institution.id room.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Czy na pewno chcesz usunąć tę salę?');">Usuń</a>
                         </td>
                     </tr>
                 {% endfor %}

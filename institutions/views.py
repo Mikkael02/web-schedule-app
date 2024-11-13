@@ -225,3 +225,32 @@ def manage_courses(request, institution_id):
     }
     return render(request, 'accounts/primary/primary_manage_courses.html', context)
 
+
+@login_required
+def edit_course(request, institution_id, course_id):
+    course = get_object_or_404(Course, id=course_id, institution_id=institution_id)
+    room_types = RoomType.objects.filter(owner=request.user)
+    equipment = Equipment.objects.filter(owner=request.user)
+
+    if request.method == 'POST':
+        form = CourseForm(request.POST, instance=course)
+        if form.is_valid():
+            form.save()
+            form.save_m2m()  # Zapisz relacje ManyToMany
+            return redirect('manage_courses', institution_id=institution_id)
+    else:
+        form = CourseForm(instance=course)
+
+    context = {
+        'course': course,
+        'form': form,
+        'room_types': room_types,
+        'equipment': equipment,
+    }
+    return render(request, 'courses/edit_course.html', context)
+
+@login_required
+def delete_course(request, institution_id, course_id):
+    course = get_object_or_404(Course, id=course_id, institution_id=institution_id)
+    course.delete()
+    return redirect('manage_courses', institution_id=institution_id)
