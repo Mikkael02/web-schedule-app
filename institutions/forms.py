@@ -49,7 +49,14 @@ class GroupForm(forms.ModelForm):
         model = Group
         fields = ['name', 'size', 'level']
         widgets = {
-            'level': forms.NumberInput(attrs={'min': 1, 'max': 8, 'step': 1}),  # Przykład: klasy 1-8
+            'level': forms.Select(),  # Używamy Select, ponieważ level jest polem wyboru (choices)
+            'size': forms.NumberInput(attrs={'min': 1, 'step': 1, 'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+        labels = {
+            'name': 'Nazwa Klasy',
+            'size': 'Liczba osób',
+            'level': 'Poziom Klasy',
         }
 
 class TeacherForm(forms.ModelForm):

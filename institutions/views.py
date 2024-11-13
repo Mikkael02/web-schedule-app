@@ -158,9 +158,13 @@ def delete_room(request, institution_id, room_id):
     return redirect('manage_rooms', institution_id=institution_id)
 
 # Zarządzanie klasami
+@login_required
 def manage_groups(request, institution_id):
     institution = get_object_or_404(Institution, id=institution_id)
     groups = Group.objects.filter(institution=institution)
+
+    # Filtrujemy tylko klasy 1-8
+    level_choices = [(choice, display) for choice, display in Group.LEVEL_CHOICES if choice.isdigit() and int(choice) <= 8]
 
     if request.method == 'POST':
         form = GroupForm(request.POST)
@@ -176,7 +180,31 @@ def manage_groups(request, institution_id):
         'institution': institution,
         'groups': groups,
         'form': form,
+        'level_choices': level_choices,  # Przekazujemy ograniczoną listę poziomów
     })
+
+@login_required
+def edit_group(request, institution_id, group_id):
+    group = get_object_or_404(Group, id=group_id, institution_id=institution_id)
+
+    if request.method == 'POST':
+        form = GroupForm(request.POST, instance=group)
+        if form.is_valid():
+            form.save()
+            return redirect('manage_groups', institution_id=institution_id)
+    else:
+        form = GroupForm(instance=group)
+
+    return render(request, 'groups/edit_group.html', {
+        'form': form,
+        'group': group
+    })
+
+@login_required
+def delete_group(request, institution_id, group_id):
+    group = get_object_or_404(Group, id=group_id, institution_id=institution_id)
+    group.delete()
+    return redirect('manage_groups', institution_id=institution_id)
 
 # Zarządzanie nauczycielami
 def manage_teachers(request, institution_id):
