@@ -201,9 +201,12 @@ def manage_teachers(request, institution_id):
 
 # Zarządzanie zajęciami
 
+@login_required
 def manage_courses(request, institution_id):
     institution = get_object_or_404(Institution, id=institution_id)
     courses = Course.objects.filter(institution=institution)
+    room_types = RoomType.objects.filter(owner=request.user)
+    equipment = Equipment.objects.filter(owner=request.user)
 
     if request.method == 'POST':
         form = CourseForm(request.POST)
@@ -211,20 +214,18 @@ def manage_courses(request, institution_id):
             course = form.save(commit=False)
             course.institution = institution
             course.save()
-            form.save_m2m()  # Zapisz relacje ManyToMany
+            form.save_m2m()  # Zapisanie relacji ManyToMany
             return redirect('manage_courses', institution_id=institution.id)
     else:
         form = CourseForm()
 
-    context = {
+    return render(request, 'accounts/primary/primary_manage_courses.html', {
         'institution': institution,
         'courses': courses,
         'form': form,
-        'room_types': RoomType.objects.filter(owner=request.user),
-        'equipment': Equipment.objects.filter(owner=request.user),
-    }
-    return render(request, 'accounts/primary/primary_manage_courses.html', context)
-
+        'room_types': room_types,
+        'equipment': equipment,
+    })
 
 @login_required
 def edit_course(request, institution_id, course_id):

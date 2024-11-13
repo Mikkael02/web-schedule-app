@@ -61,12 +61,11 @@ class TeacherForm(forms.ModelForm):
         }
 
 class CourseForm(forms.ModelForm):
-    add_equipment = forms.CharField(required=False, label="Dodaj nowe wyposażenie")
-
     class Meta:
         model = Course
-        fields = ['name', 'course_type', 'equipment']
+        fields = ['name', 'room_types', 'equipment']  # Upewnij się, że 'room_types' jest tutaj
         widgets = {
+            'room_types': forms.CheckboxSelectMultiple(),
             'equipment': forms.CheckboxSelectMultiple(),
         }
 
