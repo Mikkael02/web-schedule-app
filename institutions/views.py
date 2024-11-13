@@ -126,6 +126,37 @@ def manage_rooms(request, institution_id):
         'form': form
     })
 
+@login_required
+def edit_room(request, institution_id, pk):
+    room = get_object_or_404(Room, pk=pk, institution_id=institution_id)
+    room_types = RoomType.objects.filter(owner=request.user)
+    equipment = Equipment.objects.filter(owner=request.user)
+
+    if request.method == 'POST':
+        form = RoomForm(request.POST, instance=room)
+        if form.is_valid():
+            room = form.save()
+            room.room_types.set(form.cleaned_data['room_types'])
+            room.equipment.set(form.cleaned_data['equipment'])
+            room.save()
+            return redirect('manage_rooms', institution_id=institution_id)
+    else:
+        form = RoomForm(instance=room)
+
+    context = {
+        'form': form,
+        'room': room,
+        'room_types': room_types,
+        'equipment': equipment,
+    }
+    return render(request, 'rooms/edit_room.html', context)
+
+@login_required
+def delete_room(request, institution_id, room_id):
+    room = get_object_or_404(Room, id=room_id, institution_id=institution_id)
+    room.delete()
+    return redirect('manage_rooms', institution_id=institution_id)
+
 # Zarządzanie klasami
 def manage_groups(request, institution_id):
     institution = get_object_or_404(Institution, id=institution_id)
@@ -173,8 +204,6 @@ def manage_teachers(request, institution_id):
 def manage_courses(request, institution_id):
     institution = get_object_or_404(Institution, id=institution_id)
     courses = Course.objects.filter(institution=institution)
-    room_types = RoomType.objects.filter(owner=request.user)
-    equipment = Equipment.objects.filter(owner=request.user)
 
     if request.method == 'POST':
         form = CourseForm(request.POST)
@@ -182,16 +211,17 @@ def manage_courses(request, institution_id):
             course = form.save(commit=False)
             course.institution = institution
             course.save()
-            course.room_types.set(request.POST.getlist('course_types'))
-            course.equipment.set(request.POST.getlist('equipment'))
+            form.save_m2m()  # Zapisz relacje ManyToMany
             return redirect('manage_courses', institution_id=institution.id)
     else:
         form = CourseForm()
 
-    return render(request, 'accounts/primary/primary_manage_courses.html', {
+    context = {
         'institution': institution,
         'courses': courses,
-        'room_types': room_types,
-        'equipment': equipment,
-        'form': form
-    })
+        'form': form,
+        'room_types': RoomType.objects.filter(owner=request.user),
+        'equipment': Equipment.objects.filter(owner=request.user),
+    }
+    return render(request, 'accounts/primary/primary_manage_courses.html', context)
+

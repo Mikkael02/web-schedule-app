@@ -32,13 +32,13 @@
                 <label class="form-label">Typy Sali</label>
                 <div class="form-check">
                     {% for room_type in room_types %}
-                        <div>
-                            <input class="form-check-input" type="checkbox" name="room_types" value="{{ room_type.id }}" id="room_type_{{ room_type.id }}">
-                            <label class="form-check-label" for="room_type_{{ room_type.id }}">{{ room_type.name }}</label>
-                        </div>
+                        <input class="form-check-input" type="checkbox" name="room_types" value="{{ room_type.id }}" id="room_type_{{ room_type.id }}">
+                        <label class="form-check-label" for="room_type_{{ room_type.id }}">{{ room_type.name }}</label><br>
                     {% endfor %}
                 </div>
-                <a href="{% url 'room_types:manage_room_types' %}" class="btn btn-secondary mt-2">Zarządzaj listą typów sal</a>
+                <button type="button" class="btn btn-secondary mt-2">
+                    <a href="{% url 'room_types:manage_room_types_rooms' %}" class="text-decoration-none text-light">Zarządzaj listą typów sal</a>
+                </button>
             </div>
 
             <!-- Wyposażenie -->
@@ -53,13 +53,13 @@
                 <label class="form-label">Wyposażenie</label>
                 <div class="form-check">
                     {% for equip in equipment %}
-                        <div>
-                            <input class="form-check-input" type="checkbox" name="equipment" value="{{ equip.id }}" id="equip_{{ equip.id }}">
-                            <label class="form-check-label" for="equip_{{ equip.id }}">{{ equip.name }}</label>
-                        </div>
+                        <input class="form-check-input" type="checkbox" name="equipment" value="{{ equip.id }}" id="equip_{{ equip.id }}">
+                        <label class="form-check-label" for="equip_{{ equip.id }}">{{ equip.name }}</label><br>
                     {% endfor %}
                 </div>
-                <a href="{% url 'equipment:manage_equipment' %}" class="btn btn-secondary mt-2">Zarządzaj listą wyposażenia</a>
+                <button type="button" class="btn btn-secondary mt-2">
+                    <a href="{% url 'equipment:manage_equipment_rooms' %}" class="text-decoration-none text-light">Zarządzaj listą wyposażenia</a>
+                </button>
             </div>
 
             <button type="submit" class="btn btn-primary mt-4">Zapisz salę</button>
@@ -85,15 +85,14 @@
                         <td>{{ room.room_types.all|join:", " }}</td>
                         <td>{{ room.equipment.all|join:", " }}</td>
                         <td>
-                            <a href="#" class="btn btn-warning btn-sm">Edytuj</a>
-                            <a href="#" class="btn btn-danger btn-sm">Usuń</a>
+                            <a href="{% url 'edit_room' institution.id room.id %}" class="btn btn-warning btn-sm">Edytuj</a>
+                            <a href="{% url 'delete_room' institution.id room.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Czy na pewno chcesz usunąć tę salę?');">Usuń</a>
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-
     <script>
         document.getElementById('room_type_toggle').addEventListener('change', function () {
             document.getElementById('room_type_section').style.display = this.value === 'yes' ? 'block' : 'none';

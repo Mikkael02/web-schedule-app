@@ -1,8 +1,6 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from .models import Room
-from django.shortcuts import redirect
 from .forms import RoomForm
-
 
 def room_list(request):
     rooms = Room.objects.all()  # Pobiera wszystkie obiekty Room z bazy danych

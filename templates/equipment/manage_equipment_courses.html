@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zarządzaj Wyposażeniem</title>
+    <title>Zarządzaj Wyposażeniem (Zajęcia)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container mt-4">
-        <h1>Zarządzaj Wyposażeniem</h1>
-
+        <h1>Zarządzaj Wyposażeniem (Zajęcia)</h1>
         <form method="post" class="mb-3">
             {% csrf_token %}
             {{ form.as_p }}
@@ -25,17 +24,18 @@
                 </tr>
             </thead>
             <tbody>
-                {% for equipment in equipment_list %}
+                {% for equipment in equipment %}
                     <tr>
                         <td>{{ equipment.name }}</td>
                         <td>
-                            <a href="{% url 'equipment:edit_equipment' equipment.pk %}" class="btn btn-warning btn-sm">Edytuj</a>
-                            <a href="{% url 'equipment:delete_equipment' equipment.pk %}" class="btn btn-danger btn-sm">Usuń</a>
+                            <a href="{% url 'equipment:edit_equipment' 'courses' equipment.pk %}" class="btn btn-warning btn-sm">Edytuj</a>
+                            <a href="{% url 'equipment:delete_equipment' 'courses' equipment.pk %}" class="btn btn-danger btn-sm">Usuń</a>
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
+        <a href="{% url 'manage_courses' institution_id=1 %}" class="btn btn-secondary">Powrót</a>
     </div>
 </body>
 </html>

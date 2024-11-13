@@ -4,40 +4,69 @@ from .models import Equipment
 from .forms import EquipmentForm
 
 @login_required
-def manage_equipment(request):
-    equipment_list = Equipment.objects.filter(owner=request.user)
+def manage_equipment_rooms(request):
+    equipment = Equipment.objects.filter(owner=request.user)
 
     if request.method == 'POST':
         form = EquipmentForm(request.POST)
         if form.is_valid():
-            equipment = form.save(commit=False)
-            equipment.owner = request.user
-            equipment.save()
-            return redirect('equipment:manage_equipment')
+            equip = form.save(commit=False)
+            equip.owner = request.user
+            equip.save()
+            return redirect('equipment:manage_equipment_rooms')
     else:
         form = EquipmentForm()
 
-    return render(request, 'equipment/manage_equipment.html', {
-        'equipment_list': equipment_list,
-        'form': form
-    })
+    context = {
+        'equipment': equipment,
+        'form': form,
+    }
+    return render(request, 'equipment/manage_equipment_rooms.html', context)
 
 @login_required
-def edit_equipment(request, pk):
-    equipment = get_object_or_404(Equipment, pk=pk, owner=request.user)
+def manage_equipment_courses(request):
+    equipment = Equipment.objects.filter(owner=request.user)
 
+    if request.method == 'POST':
+        form = EquipmentForm(request.POST)
+        if form.is_valid():
+            equip = form.save(commit=False)
+            equip.owner = request.user
+            equip.save()
+            return redirect('equipment:manage_equipment_courses')
+    else:
+        form = EquipmentForm()
+
+    context = {
+        'equipment': equipment,
+        'form': form,
+    }
+    return render(request, 'equipment/manage_equipment_courses.html', context)
+
+
+@login_required
+def edit_equipment(request, pk, context):
+    equipment = get_object_or_404(Equipment, pk=pk, owner=request.user)
     if request.method == 'POST':
         form = EquipmentForm(request.POST, instance=equipment)
         if form.is_valid():
             form.save()
-            return redirect('equipment:manage_equipment')
+            if context == 'rooms':
+                return redirect('equipment:manage_equipment_rooms')
+            else:
+                return redirect('equipment:manage_equipment_courses')
     else:
         form = EquipmentForm(instance=equipment)
 
-    return render(request, 'equipment/edit_equipment.html', {'form': form})
+    template_name = f'equipment/edit_equipment_{context}.html'
+    return render(request, template_name, {'form': form, 'equipment': equipment})
+
 
 @login_required
-def delete_equipment(request, pk):
+def delete_equipment(request, pk, context):
     equipment = get_object_or_404(Equipment, pk=pk, owner=request.user)
     equipment.delete()
-    return redirect('equipment:manage_equipment')
+    if context == 'rooms':
+        return redirect('equipment:manage_equipment_rooms')
+    else:
+        return redirect('equipment:manage_equipment_courses')
