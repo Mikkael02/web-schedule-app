@@ -206,10 +206,11 @@ def delete_group(request, institution_id, group_id):
     group.delete()
     return redirect('manage_groups', institution_id=institution_id)
 
-# Zarządzanie nauczycielami
+@login_required
 def manage_teachers(request, institution_id):
     institution = get_object_or_404(Institution, id=institution_id)
     teachers = Teacher.objects.filter(institution=institution)
+    courses = Course.objects.filter(institution=institution)  # Pobieramy kursy instytucji
 
     if request.method == 'POST':
         form = TeacherForm(request.POST)
@@ -217,6 +218,7 @@ def manage_teachers(request, institution_id):
             teacher = form.save(commit=False)
             teacher.institution = institution
             teacher.save()
+            form.save_m2m()  # Zapisanie relacji ManyToMany
             return redirect('manage_teachers', institution_id=institution.id)
     else:
         form = TeacherForm()
@@ -224,9 +226,38 @@ def manage_teachers(request, institution_id):
     return render(request, 'accounts/primary/primary_manage_teachers.html', {
         'institution': institution,
         'teachers': teachers,
+        'courses': courses,
         'form': form,
+        'titles': Teacher.TITLES,  # Lista tytułów
     })
 
+@login_required
+def edit_teacher(request, institution_id, teacher_id):
+    institution = get_object_or_404(Institution, id=institution_id)
+    teacher = get_object_or_404(Teacher, id=teacher_id, institution=institution)
+    courses = Course.objects.filter(institution=institution)
+
+    if request.method == 'POST':
+        form = TeacherForm(request.POST, instance=teacher)
+        if form.is_valid():
+            form.save()
+            return redirect('manage_teachers', institution_id=institution.id)
+    else:
+        form = TeacherForm(instance=teacher)
+
+    return render(request, 'teachers/edit_teacher.html', {
+        'institution': institution,
+        'teacher': teacher,
+        'courses': courses,
+        'form': form
+    })
+
+
+@login_required
+def delete_teacher(request, institution_id, teacher_id):
+    teacher = get_object_or_404(Teacher, id=teacher_id, institution_id=institution_id)
+    teacher.delete()
+    return redirect('manage_teachers', institution_id=institution_id)
 # Zarządzanie zajęciami
 
 @login_required

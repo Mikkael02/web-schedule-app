@@ -62,10 +62,12 @@ class GroupForm(forms.ModelForm):
 class TeacherForm(forms.ModelForm):
     class Meta:
         model = Teacher
-        fields = ['first_name', 'last_name', 'title', 'email']
+        fields = ['first_name', 'last_name', 'title', 'email', 'courses']
         widgets = {
             'email': forms.EmailInput(),
+            'courses': forms.CheckboxSelectMultiple(),
         }
+
 
 class CourseForm(forms.ModelForm):
     class Meta:
