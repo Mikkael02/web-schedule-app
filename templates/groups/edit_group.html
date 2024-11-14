@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edytuj Klasę</title>
+    <title>Edytuj Grupę</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container mt-4">
-        <h1>Edytuj Klasę: {{ group.name }}</h1>
+        <h1>Edytuj Grupę: {{ group.name }}</h1>
         <form method="post">
             {% csrf_token %}
             <div class="mb-3">
-                <label for="name" class="form-label">Nazwa Klasy</label>
+                <label for="name" class="form-label">Nazwa Grupy</label>
                 <input type="text" id="name" name="name" class="form-control" value="{{ group.name }}" required>
             </div>
 
@@ -22,16 +22,27 @@
             </div>
 
             <div class="mb-3">
-                <label for="level" class="form-label">Poziom Klasy</label>
+                <label for="level" class="form-label">Poziom Grupy</label>
                 <select id="level" name="level" class="form-select" required>
-                    {% for choice in group.LEVEL_CHOICES %}
-                        <option value="{{ choice.0 }}" {% if group.level == choice.0 %}selected{% endif %}>{{ choice.1 }}</option>
+                    {% for choice, display in level_choices %}
+                        <option value="{{ choice }}" {% if group.level == choice %}selected{% endif %}>{{ display }}</option>
                     {% endfor %}
                 </select>
             </div>
 
+            {% if institution.type == 'secondary' or institution.type == 'higher' %}
+            <div class="mb-3">
+                <label for="department" class="form-label">Profil (Wydział)</label>
+                <select id="department" name="department" class="form-select" required>
+                    {% for department in departments %}
+                        <option value="{{ department.id }}" {% if group.department and group.department.id == department.id %}selected{% endif %}>{{ department.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
             <button type="submit" class="btn btn-primary mt-4">Zapisz zmiany</button>
-            <a href="{% url 'manage_groups' institution_id=group.institution.id %}" class="btn btn-secondary mt-4">Powrót</a>
+            <a href="{% url 'manage_groups' institution_id=institution.id %}" class="btn btn-secondary mt-4">Powrót</a>
         </form>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

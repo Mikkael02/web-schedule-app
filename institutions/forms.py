@@ -6,6 +6,8 @@ from teachers.models import Teacher
 from course.models import Course
 from equipment.models import Equipment
 from rooms.models import Room, RoomType
+from department.models import Department
+from faculty.models import Faculty
 
 class InstitutionForm(ModelForm):
     class Meta:
@@ -47,17 +49,18 @@ class RoomForm(forms.ModelForm):
 class GroupForm(forms.ModelForm):
     class Meta:
         model = Group
-        fields = ['name', 'size', 'level']
+        fields = ['name', 'size', 'level', 'department']
         widgets = {
-            'level': forms.Select(),  # Używamy Select, ponieważ level jest polem wyboru (choices)
-            'size': forms.NumberInput(attrs={'min': 1, 'step': 1, 'class': 'form-control'}),
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'level': forms.Select(),
         }
-        labels = {
-            'name': 'Nazwa Klasy',
-            'size': 'Liczba osób',
-            'level': 'Poziom Klasy',
-        }
+
+    def __init__(self, *args, **kwargs):
+        institution_type = kwargs.pop('institution_type', None)
+        super().__init__(*args, **kwargs)
+
+        # Ukryj department, jeśli instytucja jest typu primary
+        if institution_type == 'primary':
+            self.fields.pop('department')
 
 class TeacherForm(forms.ModelForm):
     class Meta:
@@ -92,3 +95,16 @@ class CourseForm(forms.ModelForm):
             self.save_m2m()
         return course
 
+class DepartmentForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        institution_type = kwargs.pop('institution_type', None)
+        super().__init__(*args, **kwargs)
+
+        if institution_type == 'higher':
+            self.fields['faculty'].queryset = Faculty.objects.all()
+        else:
+            self.fields.pop('faculty', None)  # Usuwamy pole dla secondary
+
+    class Meta:
+        model = Department
+        fields = ['name', 'faculty']  # Faculty będzie usunięte dynamicznie, jeśli nie jest potrzebne

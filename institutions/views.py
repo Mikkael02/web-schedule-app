@@ -10,10 +10,10 @@ from department.models import Department
 from faculty.models import Faculty
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
-from .forms import GroupForm, TeacherForm, CourseForm  # Dodamy formularze
+from .forms import GroupForm, TeacherForm
 from rooms.models import Room, RoomType, Equipment
 from course.models import Course
-from .forms import RoomForm, CourseForm
+from .forms import RoomForm, CourseForm, DepartmentForm
 
 def higher_education_view(request, institution_id):
     institution = get_object_or_404(Institution, pk=institution_id)
@@ -118,7 +118,14 @@ def manage_rooms(request, institution_id):
     else:
         form = RoomForm()
 
-    return render(request, 'accounts/primary/primary_manage_rooms.html', {
+    if institution.type == 'primary':
+        template = 'accounts/primary/primary_manage_rooms.html'
+    elif institution.type == 'secondary':
+        template = 'accounts/secondary/secondary_manage_rooms.html'
+    else:
+        template = 'accounts/higher/higher_manage_rooms.html'
+
+    return render(request, template, {
         'institution': institution,
         'rooms': rooms,
         'room_types': room_types,
@@ -162,42 +169,69 @@ def delete_room(request, institution_id, room_id):
 def manage_groups(request, institution_id):
     institution = get_object_or_404(Institution, id=institution_id)
     groups = Group.objects.filter(institution=institution)
+    departments = Department.objects.filter(faculty__institution=institution) if institution.type in ['secondary', 'higher'] else []
 
-    # Filtrujemy tylko klasy 1-8
-    level_choices = [(choice, display) for choice, display in Group.LEVEL_CHOICES if choice.isdigit() and int(choice) <= 8]
+    # Ograniczenia dla level_choices w zależności od typu instytucji
+    if institution.type == 'primary':
+        level_choices = [(choice, display) for choice, display in Group.LEVEL_CHOICES if choice.isdigit() and 1 <= int(choice) <= 8]
+        template = 'accounts/primary/primary_manage_groups.html'
+    elif institution.type == 'secondary':
+        level_choices = [(choice, display) for choice, display in Group.LEVEL_CHOICES if choice.isdigit() and 1 <= int(choice) <= 5]
+        template = 'accounts/secondary/secondary_manage_groups.html'
+    else:  # higher
+        level_choices = [(choice, display) for choice, display in Group.LEVEL_CHOICES if choice.startswith('S')]
+        template = 'accounts/higher/higher_manage_groups.html'
 
     if request.method == 'POST':
-        form = GroupForm(request.POST)
+        form = GroupForm(request.POST, institution_type=institution.type)
         if form.is_valid():
             group = form.save(commit=False)
             group.institution = institution
+            if institution.type in ['secondary', 'higher']:
+                group.department = get_object_or_404(Department, id=request.POST.get('department'))
             group.save()
             return redirect('manage_groups', institution_id=institution.id)
     else:
-        form = GroupForm()
+        form = GroupForm(institution_type=institution.type)
 
-    return render(request, 'accounts/primary/primary_manage_groups.html', {
+    return render(request, template, {
         'institution': institution,
         'groups': groups,
         'form': form,
-        'level_choices': level_choices,  # Przekazujemy ograniczoną listę poziomów
+        'level_choices': level_choices,
+        'departments': departments,  # Przekazujemy tylko dla secondary i higher
     })
 
 @login_required
 def edit_group(request, institution_id, group_id):
-    group = get_object_or_404(Group, id=group_id, institution_id=institution_id)
+    institution = get_object_or_404(Institution, id=institution_id)
+    group = get_object_or_404(Group, id=group_id, institution=institution)
+
+    # Filtrujemy odpowiednie poziomy dla danej instytucji
+    if institution.type == 'primary':
+        level_choices = [(choice, display) for choice, display in Group.LEVEL_CHOICES if choice.isdigit() and int(choice) <= 8]
+    elif institution.type == 'secondary':
+        level_choices = [(choice, display) for choice, display in Group.LEVEL_CHOICES if choice.isdigit() and int(choice) <= 5]
+    else:  # higher
+        level_choices = [(choice, display) for choice, display in Group.LEVEL_CHOICES if 'S' in choice]
 
     if request.method == 'POST':
-        form = GroupForm(request.POST, instance=group)
+        form = GroupForm(request.POST, instance=group, institution_type=institution.type)
         if form.is_valid():
-            form.save()
-            return redirect('manage_groups', institution_id=institution_id)
+            group = form.save(commit=False)
+            if institution.type in ['secondary', 'higher']:
+                group.department = get_object_or_404(Department, id=request.POST.get('department'))
+            group.save()
+            return redirect('manage_groups', institution_id=institution.id)
     else:
-        form = GroupForm(instance=group)
+        form = GroupForm(instance=group, institution_type=institution.type)
 
     return render(request, 'groups/edit_group.html', {
         'form': form,
-        'group': group
+        'group': group,
+        'institution': institution,
+        'level_choices': level_choices,
+        'departments': Department.objects.filter(faculty__institution=institution) if institution.type in ['secondary', 'higher'] else [],
     })
 
 @login_required
@@ -223,7 +257,15 @@ def manage_teachers(request, institution_id):
     else:
         form = TeacherForm()
 
-    return render(request, 'accounts/primary/primary_manage_teachers.html', {
+    # Dynamiczny wybór szablonu na podstawie typu instytucji
+    if institution.type == 'primary':
+        template = 'accounts/primary/primary_manage_teachers.html'
+    elif institution.type == 'secondary':
+        template = 'accounts/secondary/secondary_manage_teachers.html'
+    else:
+        template = 'accounts/higher/higher_manage_teachers.html'
+
+    return render(request, template, {
         'institution': institution,
         'teachers': teachers,
         'courses': courses,
@@ -278,7 +320,14 @@ def manage_courses(request, institution_id):
     else:
         form = CourseForm()
 
-    return render(request, 'accounts/primary/primary_manage_courses.html', {
+    if institution.type == 'primary':
+        template = 'accounts/primary/primary_manage_courses.html'
+    elif institution.type == 'secondary':
+        template = 'accounts/secondary/secondary_manage_courses.html'
+    else:
+        template = 'accounts/higher/higher_manage_courses.html'
+
+    return render(request, template, {
         'institution': institution,
         'courses': courses,
         'form': form,
@@ -314,3 +363,58 @@ def delete_course(request, institution_id, course_id):
     course = get_object_or_404(Course, id=course_id, institution_id=institution_id)
     course.delete()
     return redirect('manage_courses', institution_id=institution_id)
+
+@login_required
+def manage_departments(request, institution_id):
+    institution = get_object_or_404(Institution, id=institution_id)
+    departments = Department.objects.filter(faculty__institution=institution)
+
+    if request.method == 'POST':
+        form = DepartmentForm(request.POST, institution_type=institution.type)
+        if form.is_valid():
+            department = form.save(commit=False)
+            if institution.type == 'higher':
+                faculty_id = request.POST.get('faculty')
+                department.faculty = get_object_or_404(Faculty, id=faculty_id)
+            else:
+                # Usuwamy przypisanie faculty dla secondary
+                department.faculty = Faculty.objects.get_or_create(institution=institution)[0]
+            department.save()
+            return redirect('manage_departments', institution_id=institution.id)
+    else:
+        form = DepartmentForm(institution_type=institution.type)
+
+    # Dynamiczne wybieranie szablonu
+    template_name = 'accounts/secondary/secondary_manage_departments.html' if institution.type == 'secondary' else 'accounts/higher/higher_manage_departments.html'
+
+    return render(request, template_name, {
+        'institution': institution,
+        'departments': departments,
+        'form': form,
+    })
+
+@login_required
+def edit_department(request, institution_id, department_id):
+    institution = get_object_or_404(Institution, id=institution_id)
+    department = get_object_or_404(Department, id=department_id, faculty__institution=institution)
+
+    if request.method == 'POST':
+        form = DepartmentForm(request.POST, instance=department)
+        if form.is_valid():
+            form.save()
+            return redirect('manage_departments', institution_id=institution_id)
+    else:
+        form = DepartmentForm(instance=department)
+
+    return render(request, 'departments/edit_department.html', {
+        'institution': institution,
+        'form': form,
+        'department': department,
+    })
+
+@login_required
+def delete_department(request, institution_id, department_id):
+    institution = get_object_or_404(Institution, id=institution_id)
+    department = get_object_or_404(Department, id=department_id, faculty__institution=institution)
+    department.delete()
+    return redirect('manage_departments', institution_id=institution_id)

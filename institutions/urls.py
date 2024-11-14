@@ -35,6 +35,10 @@ urlpatterns = [
     path('<int:institution_id>/courses/', views.manage_courses, name='manage_courses'),
     path('<int:institution_id>/courses/edit/<int:course_id>/', views.edit_course, name='edit_course'),
     path('<int:institution_id>/courses/delete/<int:course_id>/', views.delete_course, name='delete_course'),
+    path('<int:institution_id>/departments/', views.manage_departments, name='manage_departments'),
+    path('<int:institution_id>/departments/edit/<int:department_id>/', views.edit_department, name='edit_department'),
+    path('<int:institution_id>/departments/delete/<int:department_id>/', views.delete_department, name='delete_department'),
+
 
 
     # Add additional API endpoints for plans

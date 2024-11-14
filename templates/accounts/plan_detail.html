@@ -26,13 +26,13 @@
             <li><a href="#">Zarządzaj salami</a></li>
             <li><a href="#">Zarządzaj grupami</a></li>
             <li><a href="#">Zarządzaj nauczycielami</a></li>
-            <li><a href="#">Zarządzaj zajęciami</a></li>
+            <li><a href="{% url 'manage_courses' plan.id %}">Zarządzaj zajęciami</a></li>
         {% elif plan.type == 'secondary' %}
-            <li><a href="#">Zarządzaj profilami</a></li>
-            <li><a href="#">Zarządzaj salami</a></li>
-            <li><a href="#">Zarządzaj klasami</a></li>
-            <li><a href="#">Zarządzaj nauczycielami</a></li>
-            <li><a href="#">Zarządzaj zajęciami</a></li>
+            <li><a href="{% url 'manage_departments' plan.id %}">Zarządzaj profilami</a></li>
+            <li><a href="{% url 'manage_rooms' plan.id %}">Zarządzaj salami</a></li>
+            <li><a href="{% url 'manage_groups' plan.id %}">Zarządzaj klasami</a></li>
+            <li><a href="{% url 'manage_teachers' plan.id %}">Zarządzaj nauczycielami</a></li>
+            <li><a href="{% url 'manage_courses' plan.id %}">Zarządzaj zajęciami</a></li>
         {% elif plan.type == 'primary' %}
             <li><a href="{% url 'manage_rooms' plan.id %}">Zarządzaj salami</a></li>
             <li><a href="{% url 'manage_groups' plan.id %}">Zarządzaj klasami</a></li>
