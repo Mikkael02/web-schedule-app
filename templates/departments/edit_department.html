@@ -3,16 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edytuj Wydział</title>
+    <title>{% if institution.type == 'higher' %}Edytuj Kierunek{% else %}Edytuj Profil{% endif %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container mt-4">
-        <h1>Edytuj Wydział: {{ department.name }}</h1>
+        <h1>{% if institution.type == 'higher' %}Edytuj Kierunek: {% else %}Edytuj Profil: {% endif %}{{ department.name }}</h1>
         <form method="post">
             {% csrf_token %}
             <div class="mb-3">
-                <label for="name" class="form-label">Nazwa Wydziału</label>
+                <label for="name" class="form-label">
+                    {% if institution.type == 'higher' %}Nazwa Kierunku{% else %}Nazwa Profilu{% endif %}
+                </label>
                 <input type="text" id="name" name="name" class="form-control" value="{{ department.name }}" required>
             </div>
 
@@ -21,7 +23,9 @@
                 <label for="faculty" class="form-label">Wydział</label>
                 <select id="faculty" name="faculty" class="form-select" required>
                     {% for faculty in faculties %}
-                        <option value="{{ faculty.id }}" {% if faculty.id == department.faculty.id %}selected{% endif %}>{{ faculty.name }}</option>
+                        <option value="{{ faculty.id }}" {% if department.faculty and faculty.id == department.faculty.id %}selected{% endif %}>
+                            {{ faculty.name }}
+                        </option>
                     {% endfor %}
                 </select>
             </div>

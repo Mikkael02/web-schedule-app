@@ -38,6 +38,9 @@ urlpatterns = [
     path('<int:institution_id>/departments/', views.manage_departments, name='manage_departments'),
     path('<int:institution_id>/departments/edit/<int:department_id>/', views.edit_department, name='edit_department'),
     path('<int:institution_id>/departments/delete/<int:department_id>/', views.delete_department, name='delete_department'),
+    path('<int:institution_id>/faculties/', views.manage_faculties, name='manage_faculties'),
+    path('<int:institution_id>/faculties/edit/<int:faculty_id>/', views.edit_faculty, name='edit_faculty'),
+    path('<int:institution_id>/faculties/delete/<int:faculty_id>/', views.delete_faculty, name='delete_faculty'),
 
 
 

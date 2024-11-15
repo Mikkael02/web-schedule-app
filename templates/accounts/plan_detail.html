@@ -21,11 +21,11 @@
     <h2>Opcje konfiguracji:</h2>
     <ul>
         {% if plan.type == 'higher' %}
-            <li><a href="#">Zarządzaj wydziałami</a></li>
-            <li><a href="#">Zarządzaj kierunkami</a></li>
-            <li><a href="#">Zarządzaj salami</a></li>
-            <li><a href="#">Zarządzaj grupami</a></li>
-            <li><a href="#">Zarządzaj nauczycielami</a></li>
+            <li><a href="{% url 'manage_faculties' plan.id %}">Zarządzaj wydziałami</a></li>
+            <li><a href="{% url 'manage_departments' plan.id %}">Zarządzaj kierunkami</a></li>
+            <li><a href="{% url 'manage_rooms' plan.id %}">Zarządzaj salami</a></li>
+            <li><a href="{% url 'manage_groups' plan.id %}">Zarządzaj grupami</a></li>
+            <li><a href="{% url 'manage_teachers' plan.id %}">Zarządzaj wykładowcami</a></li>
             <li><a href="{% url 'manage_courses' plan.id %}">Zarządzaj zajęciami</a></li>
         {% elif plan.type == 'secondary' %}
             <li><a href="{% url 'manage_departments' plan.id %}">Zarządzaj profilami</a></li>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zarządzaj Wydziałami - {{ institution.name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Zarządzanie Wydziałami dla {{ institution.name }}</h1>
+
+        <!-- Przycisk Powrotu -->
+        <div class="mb-3">
+            <a href="{% url 'plans' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Powrót do listy planów
+            </a>
+        </div>
+
+        <!-- Formularz dodawania nowego wydziału -->
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="name" class="form-label">Nazwa Wydziału</label>
+                <input type="text" id="name" name="name" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Dodaj Wydział</button>
+        </form>
+
+        <!-- Lista istniejących wydziałów -->
+        <h2 class="mt-5">Lista Wydziałów</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Nazwa</th>
+                    <th>Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for faculty in faculties %}
+                    <tr>
+                        <td>{{ faculty.name }}</td>
+                        <td>
+                            <a href="{% url 'edit_faculty' institution_id=institution.id faculty_id=faculty.id %}" class="btn btn-warning btn-sm">Edytuj</a>
+                            <a href="{% url 'delete_faculty' institution_id=institution.id faculty_id=faculty.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Czy na pewno chcesz usunąć ten wydział?');">Usuń</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -13,7 +13,7 @@ from django.contrib.auth.decorators import login_required
 from .forms import GroupForm, TeacherForm
 from rooms.models import Room, RoomType, Equipment
 from course.models import Course
-from .forms import RoomForm, CourseForm, DepartmentForm
+from .forms import RoomForm, CourseForm, DepartmentForm, FacultyForm
 
 def higher_education_view(request, institution_id):
     institution = get_object_or_404(Institution, pk=institution_id)
@@ -367,7 +367,8 @@ def delete_course(request, institution_id, course_id):
 @login_required
 def manage_departments(request, institution_id):
     institution = get_object_or_404(Institution, id=institution_id)
-    departments = Department.objects.filter(faculty__institution=institution)
+    departments = Department.objects.filter(faculty__institution=institution) if institution.type == 'higher' else Department.objects.filter(faculty=None)
+    faculties = Faculty.objects.filter(institution=institution) if institution.type == 'higher' else None
 
     if request.method == 'POST':
         form = DepartmentForm(request.POST, institution_type=institution.type)
@@ -377,8 +378,8 @@ def manage_departments(request, institution_id):
                 faculty_id = request.POST.get('faculty')
                 department.faculty = get_object_or_404(Faculty, id=faculty_id)
             else:
-                # Usuwamy przypisanie faculty dla secondary
-                department.faculty = Faculty.objects.get_or_create(institution=institution)[0]
+                # Ustawiamy faculty na None dla secondary
+                department.faculty = None
             department.save()
             return redirect('manage_departments', institution_id=institution.id)
     else:
@@ -390,31 +391,83 @@ def manage_departments(request, institution_id):
     return render(request, template_name, {
         'institution': institution,
         'departments': departments,
+        'faculties': faculties,  # Przekazujemy listę wydziałów tylko dla higher
         'form': form,
     })
+
 
 @login_required
 def edit_department(request, institution_id, department_id):
     institution = get_object_or_404(Institution, id=institution_id)
-    department = get_object_or_404(Department, id=department_id, faculty__institution=institution)
+    department = get_object_or_404(Department, id=department_id,
+                                   faculty__institution=institution if institution.type == 'higher' else None)
+
+    # Pobieramy listę wydziałów tylko dla 'higher'
+    faculties = Faculty.objects.filter(institution=institution) if institution.type == 'higher' else None
 
     if request.method == 'POST':
-        form = DepartmentForm(request.POST, instance=department)
+        form = DepartmentForm(request.POST, instance=department, institution_type=institution.type)
         if form.is_valid():
             form.save()
             return redirect('manage_departments', institution_id=institution_id)
     else:
-        form = DepartmentForm(instance=department)
+        form = DepartmentForm(instance=department, institution_type=institution.type)
 
     return render(request, 'departments/edit_department.html', {
-        'institution': institution,
         'form': form,
         'department': department,
+        'institution': institution,
+        'faculties': faculties,  # Przekazujemy listę wydziałów do szablonu
     })
 
 @login_required
 def delete_department(request, institution_id, department_id):
     institution = get_object_or_404(Institution, id=institution_id)
-    department = get_object_or_404(Department, id=department_id, faculty__institution=institution)
+    department = get_object_or_404(Department, id=department_id, faculty__institution=institution if institution.type == 'higher' else None)
+
     department.delete()
     return redirect('manage_departments', institution_id=institution_id)
+
+@login_required
+def manage_faculties(request, institution_id):
+    institution = get_object_or_404(Institution, id=institution_id)
+    faculties = Faculty.objects.filter(institution=institution)
+
+    if request.method == 'POST':
+        form = FacultyForm(request.POST)
+        if form.is_valid():
+            faculty = form.save(commit=False)
+            faculty.institution = institution
+            faculty.save()
+            return redirect('manage_faculties', institution_id=institution.id)
+    else:
+        form = FacultyForm()
+
+    return render(request, 'accounts/higher/higher_manage_faculties.html', {
+        'institution': institution,
+        'faculties': faculties,
+        'form': form,
+    })
+
+@login_required
+def edit_faculty(request, institution_id, faculty_id):
+    faculty = get_object_or_404(Faculty, id=faculty_id, institution_id=institution_id)
+
+    if request.method == 'POST':
+        form = FacultyForm(request.POST, instance=faculty)
+        if form.is_valid():
+            form.save()
+            return redirect('manage_faculties', institution_id=institution_id)
+    else:
+        form = FacultyForm(instance=faculty)
+
+    return render(request, 'faculties/edit_faculty.html', {
+        'form': form,
+        'faculty': faculty
+    })
+
+@login_required
+def delete_faculty(request, institution_id, faculty_id):
+    faculty = get_object_or_404(Faculty, id=faculty_id, institution_id=institution_id)
+    faculty.delete()
+    return redirect('manage_faculties', institution_id=institution_id)

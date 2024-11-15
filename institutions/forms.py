@@ -108,3 +108,9 @@ class DepartmentForm(forms.ModelForm):
     class Meta:
         model = Department
         fields = ['name', 'faculty']  # Faculty będzie usunięte dynamicznie, jeśli nie jest potrzebne
+
+
+class FacultyForm(forms.ModelForm):
+    class Meta:
+        model = Faculty
+        fields = ['name']
