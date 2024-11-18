@@ -6,13 +6,18 @@ from django.core.exceptions import ValidationError
 class TimeConfigurationForm(forms.ModelForm):
     class Meta:
         model = TimeConfiguration
-        fields = ['start_time', 'lesson_duration', 'break_type', 'break_duration', 'custom_breaks']
+        fields = ['start_time', 'end_time', 'lesson_duration', 'break_type', 'break_duration', 'custom_breaks']
 
     def clean(self):
         cleaned_data = super().clean()
         break_type = cleaned_data.get('break_type')
         break_duration = cleaned_data.get('break_duration')
         custom_breaks = cleaned_data.get('custom_breaks')
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+
+        if start_time >= end_time:
+            raise ValidationError("Czas rozpoczęcia musi być wcześniejszy niż czas zakończenia.")
 
         if break_type == 'same' and not break_duration:
             raise ValidationError("Długość przerwy jest wymagana dla przerw o tej samej długości.")

@@ -12,6 +12,7 @@
     <!-- Sekcja Informacyjna Konfiguracji Czasu -->
     <h2>Konfiguracja Czasu</h2>
     <p><strong>Pierwsze zajęcia:</strong> {{ time_config.start_time }}</p>
+    <p><strong>Ostatnie zajęcia:</strong> {{ time_config.end_time }}</p> <!-- Nowe pole -->
     <p><strong>Czas trwania zajęć:</strong> {{ time_config.lesson_duration }}</p>
     <p><strong>Typ przerw:</strong> {{ time_config.get_break_type_display }}</p>
     {% if time_config.break_type == 'same' %}

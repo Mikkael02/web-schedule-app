@@ -96,6 +96,7 @@ def generate_schedule(request, institution_id):
         institution=institution,
         defaults={
             'start_time': '08:00',
+            'end_time': '20:00',
             'lesson_duration': timedelta(minutes=90),
             'break_type': 'same',
             'break_duration': timedelta(minutes=30),
