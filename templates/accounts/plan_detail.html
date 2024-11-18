@@ -41,7 +41,12 @@
         {% endif %}
     </ul>
 
-    <!-- Nowy przycisk do wyświetlenia planu -->
+    <!-- Nowy przycisk do układania planu -->
+    <a href="{% url 'generate_schedule' plan.id %}" class="btn btn-success mt-3">
+        <i class="fas fa-calendar-alt"></i> Układaj Plan
+    </a>
+
+    <!-- Przycisk do wyświetlenia planu -->
     <a href="{% url 'view_plan' plan.id %}" target="_blank" class="btn btn-primary mt-3">
         <i class="fas fa-eye"></i> Wyświetl Plan
     </a>

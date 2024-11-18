@@ -4,7 +4,6 @@ from django.http import JsonResponse
 from .models import Institution
 from rooms.models import Room
 from teachers.models import Teacher
-from course.models import Course
 from group.models import Group
 from department.models import Department
 from faculty.models import Faculty

@@ -1,12 +1,19 @@
 from django.shortcuts import render
-from .models import Schedule
 from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
 from .forms import ScheduleForm
-from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from group.models import Group
 from rooms.models import Room
 from teachers.models import Teacher
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Institution, Course, Group, Schedule
+from .forms import CourseAssignmentForm
+from department.models import Department
+from TimeConfiguration.forms import TimeConfigurationForm
+from TimeConfiguration.models import TimeConfiguration
+from datetime import timedelta
+import json
 
 def schedule_list(request):
     schedules = Schedule.objects.all()  # Pobiera wszystkie obiekty Schedule z bazy danych
@@ -80,3 +87,37 @@ def get_schedule_for_teacher(request, teacher_id):
     schedules = Schedule.objects.filter(teacher=teacher)
     schedule_data = get_schedule_data(schedules)
     return JsonResponse(schedule_data, safe=False)
+
+@login_required
+def generate_schedule(request, institution_id):
+    institution = get_object_or_404(Institution, id=institution_id)
+
+    time_config, created = TimeConfiguration.objects.get_or_create(
+        institution=institution,
+        defaults={
+            'start_time': '08:00',
+            'lesson_duration': timedelta(minutes=90),
+            'break_type': 'same',
+            'break_duration': timedelta(minutes=30),
+            'custom_breaks': json.dumps({})
+        }
+    )
+
+    if request.method == 'POST':
+        form = TimeConfigurationForm(request.POST, instance=time_config)
+        if form.is_valid():
+            time_config = form.save(commit=False)
+            if time_config.break_type == 'custom':
+                time_config.custom_breaks = form.cleaned_data['custom_breaks']
+            else:
+                time_config.custom_breaks = json.dumps({})
+            time_config.save()
+            return redirect('generate_schedule', institution_id=institution.id)
+    else:
+        form = TimeConfigurationForm(instance=time_config)
+
+    return render(request, 'schedules/generate_schedule.html', {
+        'institution': institution,
+        'time_config': time_config,
+        'form': form,
+    })

@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'accounts',
     'room_types',
     'equipment',
+    'TimeConfiguration',
 ]
 
 MIDDLEWARE = [
