@@ -137,17 +137,20 @@ def manual_schedule(request, institution_id):
         form = ManualScheduleForm(request.POST, institution=institution, start_times=start_times)
         if form.is_valid():
             schedule = form.save(commit=False)
-            # Automatyczne ustawienie end_time
             schedule.end_time = (
-                    datetime.combine(datetime.today(), schedule.start_time) +
-                    time_config.lesson_duration
+                datetime.combine(datetime.today(), schedule.start_time) +
+                time_config.lesson_duration
             ).time()
 
-            # Walidacja konfliktów i wymagań sali
+            # Walidacja konfliktów i wymagań sali oraz nauczyciela
             if check_conflicts(schedule, schedules):
                 form.add_error(None, "Konflikt z istniejącymi zajęciami.")
             elif not check_room_requirements(schedule.course, schedule.room):
                 form.add_error(None, "Sala nie spełnia wymagań zajęć.")
+            elif not check_teacher_courses(schedule.teacher, schedule.course):
+                form.add_error(None, "Nauczyciel nie może prowadzić wybranych zajęć.")
+            elif not check_room_capacity(schedule.group, schedule.room):
+                form.add_error(None, "Sala nie może pomieścić wszystkich uczniów.")
             else:
                 schedule.institution = institution
                 schedule.save()
@@ -208,6 +211,13 @@ def check_conflicts(new_schedule, existing_schedules):
             return True
     return False
 
+def check_teacher_courses(teacher, course):
+    """Sprawdź czy nauczyciel może prowadzić dane zajęcia."""
+    return course in teacher.courses.all()
+
+def check_room_capacity(group, room):
+    """Sprawdź czy sala ma wystarczającą pojemność dla grupy."""
+    return group.size <= room.capacity
 
 def check_room_requirements(course, room):
     """Sprawdź czy sala spełnia wymagania zajęć."""

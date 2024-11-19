@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'room_types',
     'equipment',
     'TimeConfiguration',
+    'SubjectFrequency',
 ]
 
 MIDDLEWARE = [
