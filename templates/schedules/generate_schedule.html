@@ -12,7 +12,7 @@
     <!-- Sekcja Informacyjna Konfiguracji Czasu -->
     <h2>Konfiguracja Czasu</h2>
     <p><strong>Pierwsze zajęcia:</strong> {{ time_config.start_time }}</p>
-    <p><strong>Ostatnie zajęcia:</strong> {{ time_config.end_time }}</p> <!-- Nowe pole -->
+    <p><strong>Ostatnie zajęcia:</strong> {{ time_config.end_time }}</p>
     <p><strong>Czas trwania zajęć:</strong> {{ time_config.lesson_duration }}</p>
     <p><strong>Typ przerw:</strong> {{ time_config.get_break_type_display }}</p>
     {% if time_config.break_type == 'same' %}
@@ -29,7 +29,12 @@
     <!-- Przycisk do edycji konfiguracji czasu -->
     <a href="{% url 'configure_time' institution.id %}" class="btn btn-primary mt-3">Edytuj Konfigurację Czasu</a>
 
+    <!-- Przycisk do manualnego układania planu -->
+    <a href="{% url 'manual_schedule' institution.id %}" class="btn btn-success mt-3">Ułóż Manualnie</a>
+
+    <!-- Przycisk powrotu -->
     <a href="{% url 'plans' %}" class="btn btn-secondary mt-4">Powrót do Planów</a>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

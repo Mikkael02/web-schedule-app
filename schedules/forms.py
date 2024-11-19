@@ -1,4 +1,4 @@
-from .models import Schedule, Course, Group
+from .models import Schedule, Course, Group, Teacher, Room
 from TimeConfiguration.models import TimeConfiguration
 from django import forms
 from .models import Schedule
@@ -18,16 +18,17 @@ class ScheduleForm(forms.ModelForm):
             self.fields['room'].queryset = institution.rooms.all()
             self.fields['teacher'].queryset = institution.teachers.all()
 
-class CourseAssignmentForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        institution_type = kwargs.pop('institution_type')
-        super().__init__(*args, **kwargs)
-        self.fields['courses'] = forms.ModelMultipleChoiceField(
-            queryset=Course.objects.filter(institution__type=institution_type),
-            widget=forms.CheckboxSelectMultiple
-        )
-        self.fields['weekly_count'] = forms.FloatField(min_value=0.5, step=0.5)
+class ManualScheduleForm(forms.ModelForm):
+    start_time = forms.ChoiceField(label='Godzina rozpoczęcia', choices=[])
 
-    def save_assignments(self, institution):
-        # Logika przypisywania kursów do grup/kierunków
-        pass
+    class Meta:
+        model = Schedule
+        fields = ['group', 'course', 'teacher', 'room', 'week_type', 'day_of_week', 'start_time']
+
+    def __init__(self, *args, institution=None, start_times=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['group'].queryset = Group.objects.filter(institution=institution)
+        self.fields['course'].queryset = Course.objects.filter(institution=institution)
+        self.fields['teacher'].queryset = Teacher.objects.filter(institution=institution)
+        self.fields['room'].queryset = Room.objects.filter(institution=institution)
+        self.fields['start_time'].choices = [(t.strftime('%H:%M'), t.strftime('%H:%M')) for t in start_times]

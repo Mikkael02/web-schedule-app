@@ -10,6 +10,7 @@ from .views import (
 from . import views
 from schedules.views import generate_schedule
 from TimeConfiguration.views import configure_time
+from schedules.views import manual_schedule
 
 urlpatterns = [
     path('higher-education/<int:institution_id>/', higher_education_view, name='higher-education'),
@@ -45,6 +46,7 @@ urlpatterns = [
     path('<int:institution_id>/faculties/delete/<int:faculty_id>/', views.delete_faculty, name='delete_faculty'),
     path('<int:institution_id>/generate-schedule/', generate_schedule, name='generate_schedule'),
     path('<int:institution_id>/configure-time/', configure_time, name='configure_time'),
+    path('<int:institution_id>/manual-schedule/', manual_schedule, name='manual_schedule'),
 
 
 
