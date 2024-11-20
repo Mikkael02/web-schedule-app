@@ -14,7 +14,9 @@ def define_subject_frequency(request, institution_id):
     institution = get_object_or_404(Institution, id=institution_id)
     institution_type = institution.type
 
-    # Przygotowanie danych do formularza
+    formset_initial = []
+    grouped_forms = {}
+
     if institution_type == 'primary':
         groups = Group.objects.filter(institution=institution).order_by('level')
         formset_initial = [
@@ -22,25 +24,36 @@ def define_subject_frequency(request, institution_id):
             for group in groups
             for course in Course.objects.filter(institution=institution)
         ]
-    else:
-        departments = Department.objects.filter(faculty__institution=institution)
-        formset_initial = [
-            {'department': department, 'course': course, 'institution': institution}
-            for department in departments
-            for course in Course.objects.filter(institution=institution)
-        ]
+        for group in groups:
+            grouped_forms[f"Klasa {group.level}"] = [
+                {'group': group, 'course': course}
+                for course in Course.objects.filter(institution=institution)
+            ]
 
+    else:  # For secondary and higher
+        departments = Department.objects.filter(faculty__institution=institution)
+        for department in departments:
+            department_groups = Group.objects.filter(department=department).order_by('level')
+            grouped_forms[department.name] = {}
+            for group in department_groups:
+                grouped_forms[department.name][f"Klasa/Semestr {group.level}"] = [
+                    {'group': group, 'course': course}
+                    for course in Course.objects.filter(institution=institution)
+                ]
+                formset_initial.extend([
+                    {'group': group, 'course': course, 'department': department, 'institution': institution}
+                    for course in Course.objects.filter(institution=institution)
+                ])
+
+    # Tworzenie formsetu
     formset = SubjectFrequencyFormSet(
         request.POST or None,
         queryset=SubjectFrequency.objects.filter(institution=institution),
         initial=formset_initial
     )
 
-    # Ustawienie queryset dla pól 'course' i dynamiczne przypisywanie instancji
     for form in formset:
         form.fields['course'].queryset = Course.objects.filter(institution=institution)
-        if not form.instance.course_id and 'course' in form.initial:
-            form.instance.course = form.initial['course']
 
     if request.method == 'POST':
         if formset.is_valid():
@@ -49,18 +62,6 @@ def define_subject_frequency(request, institution_id):
                 instance.institution = institution
                 instance.save()
             return redirect('define_subject_frequency', institution_id=institution_id)
-
-    grouped_forms = {}
-    if institution_type == 'primary':
-        for group in groups:
-            grouped_forms[f"Klasa {group.level}"] = [
-                form for form in formset if form.initial.get('group') == group
-            ]
-    else:
-        for department in departments:
-            grouped_forms[f"{department.name}"] = [
-                form for form in formset if form.initial.get('department') == department
-            ]
 
     frequency_choices = [0] + [round(x * 0.5, 1) for x in range(1, 21)]
 

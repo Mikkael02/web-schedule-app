@@ -13,32 +13,62 @@
         {% csrf_token %}
 
         {% if grouped_forms %}
-            {% for group_name, forms in grouped_forms.items %}
+            {% for group_name, group_data in grouped_forms.items %}
                 <h3>{{ group_name }}</h3>
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Kurs</th>
-                            <th>Ilość zajęć w tygodniu</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for form in forms %}
+                {% if institution.type == 'primary' %}
+                    <table class="table table-striped">
+                        <thead>
                             <tr>
-                                <td>{{ form.instance.course.name }}</td>
-                                <td>
-                                    <select name="{{ form.prefix }}-frequency" class="form-control">
-                                        {% for choice in frequency_choices %}
-                                            <option value="{{ choice }}" {% if form.instance.frequency == choice %}selected{% endif %}>
-                                                {{ choice }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </td>
+                                <th>Kurs</th>
+                                <th>Ilość zajęć w tygodniu</th>
                             </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {% for entry in group_data %}
+                                <tr>
+                                    <td>{{ entry.course.name }}</td>
+                                    <td>
+                                        <select name="frequency-{{ entry.group.id }}-{{ entry.course.id }}" class="form-control">
+                                            {% for choice in frequency_choices %}
+                                                <option value="{{ choice }}">
+                                                    {{ choice }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    {% for subgroup_name, subgroup_data in group_data.items %}
+                        <h4>{{ subgroup_name }}</h4>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Kurs</th>
+                                    <th>Ilość zajęć w tygodniu</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in subgroup_data %}
+                                    <tr>
+                                        <td>{{ entry.course.name }}</td>
+                                        <td>
+                                            <select name="frequency-{{ entry.group.id }}-{{ entry.course.id }}" class="form-control">
+                                                {% for choice in frequency_choices %}
+                                                    <option value="{{ choice }}">
+                                                        {{ choice }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endfor %}
+                {% endif %}
             {% endfor %}
         {% else %}
             <p>Brak danych do wyświetlenia.</p>

@@ -163,12 +163,20 @@ def delete_room(request, institution_id, room_id):
     room.delete()
     return redirect('manage_rooms', institution_id=institution_id)
 
-# Zarządzanie klasami
 @login_required
 def manage_groups(request, institution_id):
     institution = get_object_or_404(Institution, id=institution_id)
     groups = Group.objects.filter(institution=institution)
-    departments = Department.objects.filter(faculty__institution=institution) if institution.type in ['secondary', 'higher'] else []
+
+    # Filtrowanie department na podstawie typu instytucji
+    if institution.type == 'secondary':
+        # W secondary korzystamy z nowego pola `institution`
+        departments = Department.objects.filter(institution=institution)
+    elif institution.type == 'higher':
+        # W higher korzystamy z `faculty`
+        departments = Department.objects.filter(faculty__institution=institution)
+    else:  # primary
+        departments = []
 
     # Ograniczenia dla level_choices w zależności od typu instytucji
     if institution.type == 'primary':
@@ -209,10 +217,13 @@ def edit_group(request, institution_id, group_id):
     # Filtrujemy odpowiednie poziomy dla danej instytucji
     if institution.type == 'primary':
         level_choices = [(choice, display) for choice, display in Group.LEVEL_CHOICES if choice.isdigit() and int(choice) <= 8]
+        departments = []
     elif institution.type == 'secondary':
         level_choices = [(choice, display) for choice, display in Group.LEVEL_CHOICES if choice.isdigit() and int(choice) <= 5]
+        departments = Department.objects.filter(institution=institution)
     else:  # higher
         level_choices = [(choice, display) for choice, display in Group.LEVEL_CHOICES if 'S' in choice]
+        departments = Department.objects.filter(faculty__institution=institution)
 
     if request.method == 'POST':
         form = GroupForm(request.POST, instance=group, institution_type=institution.type)
@@ -230,7 +241,7 @@ def edit_group(request, institution_id, group_id):
         'group': group,
         'institution': institution,
         'level_choices': level_choices,
-        'departments': Department.objects.filter(faculty__institution=institution) if institution.type in ['secondary', 'higher'] else [],
+        'departments': departments,  # Lista profilów dla secondary/higher
     })
 
 @login_required
@@ -366,19 +377,23 @@ def delete_course(request, institution_id, course_id):
 @login_required
 def manage_departments(request, institution_id):
     institution = get_object_or_404(Institution, id=institution_id)
-    departments = Department.objects.filter(faculty__institution=institution) if institution.type == 'higher' else Department.objects.filter(faculty=None)
-    faculties = Faculty.objects.filter(institution=institution) if institution.type == 'higher' else None
+    if institution.type == 'higher':
+        departments = Department.objects.filter(faculty__institution=institution)
+        faculties = Faculty.objects.filter(institution=institution)
+    else:  # secondary
+        departments = Department.objects.filter(institution=institution)
+        faculties = None
 
     if request.method == 'POST':
         form = DepartmentForm(request.POST, institution_type=institution.type)
         if form.is_valid():
             department = form.save(commit=False)
+            department.institution = institution
             if institution.type == 'higher':
                 faculty_id = request.POST.get('faculty')
                 department.faculty = get_object_or_404(Faculty, id=faculty_id)
             else:
-                # Ustawiamy faculty na None dla secondary
-                department.faculty = None
+                department.faculty = None  # Secondary profiles do not use faculty
             department.save()
             return redirect('manage_departments', institution_id=institution.id)
     else:
