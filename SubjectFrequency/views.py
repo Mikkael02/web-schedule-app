@@ -18,6 +18,7 @@ def define_subject_frequency(request, institution_id):
     grouped_forms = {}
 
     if institution_type == 'primary':
+        # Dane dla primary
         groups = Group.objects.filter(institution=institution).order_by('level')
         formset_initial = [
             {'group': group, 'course': course, 'institution': institution}
@@ -29,14 +30,29 @@ def define_subject_frequency(request, institution_id):
                 {'group': group, 'course': course}
                 for course in Course.objects.filter(institution=institution)
             ]
-
-    else:  # For secondary and higher
+    elif institution_type == 'secondary':
+        # Dane dla secondary
+        departments = Department.objects.filter(institution=institution)
+        for department in departments:
+            department_groups = Group.objects.filter(department=department).order_by('level')
+            grouped_forms[department.name] = {}
+            for group in department_groups:
+                grouped_forms[department.name][f"Klasa {group.level}"] = [
+                    {'group': group, 'course': course}
+                    for course in Course.objects.filter(institution=institution)
+                ]
+                formset_initial.extend([
+                    {'group': group, 'course': course, 'department': department, 'institution': institution}
+                    for course in Course.objects.filter(institution=institution)
+                ])
+    elif institution_type == 'higher':
+        # Dane dla higher
         departments = Department.objects.filter(faculty__institution=institution)
         for department in departments:
             department_groups = Group.objects.filter(department=department).order_by('level')
             grouped_forms[department.name] = {}
             for group in department_groups:
-                grouped_forms[department.name][f"Klasa/Semestr {group.level}"] = [
+                grouped_forms[department.name][f"Semestr {group.level}"] = [
                     {'group': group, 'course': course}
                     for course in Course.objects.filter(institution=institution)
                 ]
@@ -70,3 +86,4 @@ def define_subject_frequency(request, institution_id):
         'grouped_forms': grouped_forms,
         'frequency_choices': frequency_choices,
     })
+

@@ -237,50 +237,69 @@ def check_room_requirements(course, room):
             all(eq in room.equipment.all() for eq in required_equipment)
     )
 
+
 @login_required
 def automatic_schedule(request, institution_id):
     institution = get_object_or_404(Institution, id=institution_id)
     schedules = Schedule.objects.filter(institution=institution)
-
-    # Czyścimy stare zajęcia
-    schedules.delete()
-
     frequencies = SubjectFrequency.objects.filter(institution=institution)
     time_config = get_object_or_404(TimeConfiguration, institution=institution)
-    start_times = calculate_start_times(time_config)
 
-    # Algorytm układania planu
-    for freq in frequencies:
-        group = freq.group
-        course = freq.course
-        teacher = course.teacher_set.first()  # Pierwszy nauczyciel przypisany do kursu
-        room = find_suitable_room(course, institution)
-        if not room or not teacher:
-            continue
+    days_mapping = {
+        'full': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+        'normal': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+        'weekend': ['Saturday', 'Sunday']
+    }
 
-        sessions_needed = int(freq.frequency * 2)  # Obliczamy liczbę sesji
-        week_types = ['weekly'] * (sessions_needed // 2) + ['odd', 'even'][:sessions_needed % 2]
+    if request.method == 'POST':
+        selected_days = request.POST.get('days', 'normal')
+        days = days_mapping[selected_days]
 
-        for week_type in week_types:
-            for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']:
-                for start_time in start_times:
-                    end_time = (datetime.combine(datetime.today(), start_time) + time_config.lesson_duration).time()
-                    if not check_conflicts_auto(group, teacher, room, day, start_time, end_time, schedules):
-                        schedule = Schedule.objects.create(
-                            institution=institution,
-                            group=group,
-                            course=course,
-                            teacher=teacher,
-                            room=room,
-                            week_type=week_type,
-                            day_of_week=day,
-                            start_time=start_time,
-                            end_time=end_time
-                        )
-                        schedules.add(schedule)
-                        break
+        # Czyścimy stare zajęcia
+        schedules.delete()
 
-def check_conflicts_auto(group, teacher, room, day, start_time, end_time, schedules):
+        start_times = calculate_start_times(time_config)
+
+        # Algorytm układania planu
+        for freq in frequencies:
+            group = freq.group
+            course = freq.course
+            teacher = course.teacher_set.first()  # Pierwszy nauczyciel przypisany do kursu
+            room = find_suitable_room(course, institution)
+            if not room or not teacher:
+                continue
+
+            sessions_needed = int(freq.frequency * 2)  # Obliczamy liczbę sesji
+            week_types = ['weekly'] * (sessions_needed // 2) + ['odd', 'even'][:sessions_needed % 2]
+
+            for week_type in week_types:
+                for day in days:
+                    for start_time in start_times:
+                        end_time = (datetime.combine(datetime.today(), start_time) + time_config.lesson_duration).time()
+                        if not check_conflicts_auto(group, teacher, room, day, start_time, end_time, week_type,
+                                                    schedules):
+                            Schedule.objects.create(
+                                institution=institution,
+                                group=group,
+                                course=course,
+                                teacher=teacher,
+                                room=room,
+                                week_type=week_type,
+                                day_of_week=day,
+                                start_time=start_time,
+                                end_time=end_time
+                            )
+                            break
+        return redirect('plans')  # Po zakończeniu układania wracamy do listy planów
+
+    return render(request, 'schedules/automatic_schedule.html', {
+        'institution': institution,
+        'days_mapping': days_mapping,
+    })
+
+
+def check_conflicts_auto(group, teacher, room, day, start_time, end_time, week_type, schedules):
+    """Rozszerzona funkcja sprawdzania konfliktów."""
     for schedule in schedules:
         if schedule.day_of_week == day and (
                 (schedule.group == group or
@@ -288,10 +307,17 @@ def check_conflicts_auto(group, teacher, room, day, start_time, end_time, schedu
                  schedule.room == room) and
                 start_time < schedule.end_time and end_time > schedule.start_time
         ):
-            return True
+            if (
+                    schedule.week_type == 'weekly' or
+                    week_type == 'weekly' or
+                    schedule.week_type == week_type
+            ):
+                return True
     return False
 
+
 def find_suitable_room(course, institution):
+    """Znajdź odpowiednią salę."""
     rooms = Room.objects.filter(institution=institution)
     for room in rooms:
         if check_room_requirements(course, room):
