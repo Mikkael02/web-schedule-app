@@ -32,6 +32,9 @@
     <!-- Przycisk do manualnego układania planu -->
     <a href="{% url 'manual_schedule' institution.id %}" class="btn btn-success mt-3">Ułóż Manualnie</a>
 
+    <!-- Przycisk do automatycznego układania planu -->
+    <a href="{% url 'define_subject_frequency' institution.id %}" class="btn btn-warning mt-3">Układaj Automatycznie</a>
+
     <!-- Przycisk powrotu -->
     <a href="{% url 'plans' %}" class="btn btn-secondary mt-4">Powrót do Planów</a>
 

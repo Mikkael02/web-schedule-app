@@ -11,6 +11,7 @@ from .models import Institution, Course, Group, Schedule
 from department.models import Department
 from TimeConfiguration.forms import TimeConfigurationForm
 from TimeConfiguration.models import TimeConfiguration
+from SubjectFrequency.models import SubjectFrequency
 from datetime import timedelta, datetime
 import json
 from schedules.forms import ManualScheduleForm
@@ -199,16 +200,23 @@ def calculate_start_times(time_config):
     return times
 
 def check_conflicts(new_schedule, existing_schedules):
-    """Sprawdź czy nowy harmonogram koliduje z istniejącymi zajęciami."""
+    """Sprawdź czy nowy harmonogram koliduje z istniejącymi zajęciami, uwzględniając typ tygodnia."""
     for schedule in existing_schedules:
+        # Sprawdzenie konfliktu na poziomie grupy, sali lub nauczyciela
         if (
-                (schedule.group == new_schedule.group or
-                 schedule.room == new_schedule.room or
-                 schedule.teacher == new_schedule.teacher) and
-                schedule.day_of_week == new_schedule.day_of_week and
-                not (new_schedule.start_time >= schedule.end_time or new_schedule.end_time <= schedule.start_time)
+            (schedule.group == new_schedule.group or
+             schedule.room == new_schedule.room or
+             schedule.teacher == new_schedule.teacher) and
+            schedule.day_of_week == new_schedule.day_of_week and
+            not (new_schedule.start_time >= schedule.end_time or new_schedule.end_time <= schedule.start_time)
         ):
-            return True
+            # Sprawdzenie konfliktu typów tygodnia
+            if (
+                schedule.week_type == 'weekly' or
+                new_schedule.week_type == 'weekly' or
+                schedule.week_type == new_schedule.week_type
+            ):
+                return True
     return False
 
 def check_teacher_courses(teacher, course):
@@ -228,3 +236,64 @@ def check_room_requirements(course, room):
             all(rt in room.room_types.all() for rt in required_types) and
             all(eq in room.equipment.all() for eq in required_equipment)
     )
+
+@login_required
+def automatic_schedule(request, institution_id):
+    institution = get_object_or_404(Institution, id=institution_id)
+    schedules = Schedule.objects.filter(institution=institution)
+
+    # Czyścimy stare zajęcia
+    schedules.delete()
+
+    frequencies = SubjectFrequency.objects.filter(institution=institution)
+    time_config = get_object_or_404(TimeConfiguration, institution=institution)
+    start_times = calculate_start_times(time_config)
+
+    # Algorytm układania planu
+    for freq in frequencies:
+        group = freq.group
+        course = freq.course
+        teacher = course.teacher_set.first()  # Pierwszy nauczyciel przypisany do kursu
+        room = find_suitable_room(course, institution)
+        if not room or not teacher:
+            continue
+
+        sessions_needed = int(freq.frequency * 2)  # Obliczamy liczbę sesji
+        week_types = ['weekly'] * (sessions_needed // 2) + ['odd', 'even'][:sessions_needed % 2]
+
+        for week_type in week_types:
+            for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']:
+                for start_time in start_times:
+                    end_time = (datetime.combine(datetime.today(), start_time) + time_config.lesson_duration).time()
+                    if not check_conflicts_auto(group, teacher, room, day, start_time, end_time, schedules):
+                        schedule = Schedule.objects.create(
+                            institution=institution,
+                            group=group,
+                            course=course,
+                            teacher=teacher,
+                            room=room,
+                            week_type=week_type,
+                            day_of_week=day,
+                            start_time=start_time,
+                            end_time=end_time
+                        )
+                        schedules.add(schedule)
+                        break
+
+def check_conflicts_auto(group, teacher, room, day, start_time, end_time, schedules):
+    for schedule in schedules:
+        if schedule.day_of_week == day and (
+                (schedule.group == group or
+                 schedule.teacher == teacher or
+                 schedule.room == room) and
+                start_time < schedule.end_time and end_time > schedule.start_time
+        ):
+            return True
+    return False
+
+def find_suitable_room(course, institution):
+    rooms = Room.objects.filter(institution=institution)
+    for room in rooms:
+        if check_room_requirements(course, room):
+            return room
+    return None

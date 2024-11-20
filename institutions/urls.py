@@ -10,7 +10,8 @@ from .views import (
 from . import views
 from schedules.views import generate_schedule
 from TimeConfiguration.views import configure_time
-from schedules.views import manual_schedule
+from schedules.views import manual_schedule, automatic_schedule
+from SubjectFrequency.views import define_subject_frequency
 
 urlpatterns = [
     path('higher-education/<int:institution_id>/', higher_education_view, name='higher-education'),
@@ -47,6 +48,9 @@ urlpatterns = [
     path('<int:institution_id>/generate-schedule/', generate_schedule, name='generate_schedule'),
     path('<int:institution_id>/configure-time/', configure_time, name='configure_time'),
     path('<int:institution_id>/manual-schedule/', manual_schedule, name='manual_schedule'),
+    path('<int:institution_id>/define-subject-frequency/', define_subject_frequency,
+         name='define_subject_frequency'),
+    path('<int:institution_id>/automatic-schedule/', automatic_schedule, name='automatic_schedule'),
 
 
 
