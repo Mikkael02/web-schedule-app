@@ -14,70 +14,72 @@ def define_subject_frequency(request, institution_id):
     institution = get_object_or_404(Institution, id=institution_id)
     institution_type = institution.type
 
-    formset_initial = []
+    # Przygotowanie danych do wyświetlenia
     grouped_forms = {}
+    frequencies = SubjectFrequency.objects.filter(institution=institution)
+    frequency_map = {(sf.group.id, sf.course.id): sf.frequency for sf in frequencies}
 
     if institution_type == 'primary':
-        # Dane dla primary
         groups = Group.objects.filter(institution=institution).order_by('level')
-        formset_initial = [
-            {'group': group, 'course': course, 'institution': institution}
-            for group in groups
-            for course in Course.objects.filter(institution=institution)
-        ]
         for group in groups:
             grouped_forms[f"Klasa {group.level}"] = [
-                {'group': group, 'course': course}
+                {
+                    'group': group,
+                    'course': course,
+                    'frequency': frequency_map.get((group.id, course.id), 0)
+                }
                 for course in Course.objects.filter(institution=institution)
             ]
     elif institution_type == 'secondary':
-        # Dane dla secondary
         departments = Department.objects.filter(institution=institution)
         for department in departments:
-            department_groups = Group.objects.filter(department=department).order_by('level')
             grouped_forms[department.name] = {}
-            for group in department_groups:
+            for group in Group.objects.filter(department=department).order_by('level'):
                 grouped_forms[department.name][f"Klasa {group.level}"] = [
-                    {'group': group, 'course': course}
+                    {
+                        'group': group,
+                        'course': course,
+                        'frequency': frequency_map.get((group.id, course.id), 0)
+                    }
                     for course in Course.objects.filter(institution=institution)
                 ]
-                formset_initial.extend([
-                    {'group': group, 'course': course, 'department': department, 'institution': institution}
-                    for course in Course.objects.filter(institution=institution)
-                ])
     elif institution_type == 'higher':
-        # Dane dla higher
         departments = Department.objects.filter(faculty__institution=institution)
         for department in departments:
-            department_groups = Group.objects.filter(department=department).order_by('level')
             grouped_forms[department.name] = {}
-            for group in department_groups:
+            for group in Group.objects.filter(department=department).order_by('level'):
                 grouped_forms[department.name][f"Semestr {group.level}"] = [
-                    {'group': group, 'course': course}
+                    {
+                        'group': group,
+                        'course': course,
+                        'frequency': frequency_map.get((group.id, course.id), 0)
+                    }
                     for course in Course.objects.filter(institution=institution)
                 ]
-                formset_initial.extend([
-                    {'group': group, 'course': course, 'department': department, 'institution': institution}
-                    for course in Course.objects.filter(institution=institution)
-                ])
-
-    # Tworzenie formsetu
-    formset = SubjectFrequencyFormSet(
-        request.POST or None,
-        queryset=SubjectFrequency.objects.filter(institution=institution),
-        initial=formset_initial
-    )
-
-    for form in formset:
-        form.fields['course'].queryset = Course.objects.filter(institution=institution)
 
     if request.method == 'POST':
-        if formset.is_valid():
-            instances = formset.save(commit=False)
-            for instance in instances:
-                instance.institution = institution
-                instance.save()
-            return redirect('define_subject_frequency', institution_id=institution_id)
+        frequencies = []
+        for key, value in request.POST.items():
+            if key.startswith("frequency-"):
+                try:
+                    _, group_id, course_id = key.split('-')
+                    frequency = float(value)
+                    group = Group.objects.get(id=group_id)
+                    course = Course.objects.get(id=course_id)
+                    frequencies.append(SubjectFrequency(
+                        institution=institution,
+                        group=group,
+                        course=course,
+                        frequency=frequency
+                    ))
+                except Exception as e:
+                    print(f"Błąd przetwarzania danych: {e}")
+        if frequencies:
+            SubjectFrequency.objects.filter(institution=institution).delete()
+            SubjectFrequency.objects.bulk_create(frequencies)
+            return redirect('automatic_schedule', institution_id=institution_id)
+        else:
+            print("Nie znaleziono żadnych danych do zapisania")
 
     frequency_choices = [0] + [round(x * 0.5, 1) for x in range(1, 21)]
 
@@ -86,4 +88,3 @@ def define_subject_frequency(request, institution_id):
         'grouped_forms': grouped_forms,
         'frequency_choices': frequency_choices,
     })
-

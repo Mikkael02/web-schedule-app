@@ -30,7 +30,7 @@
                                     <td>
                                         <select name="frequency-{{ entry.group.id }}-{{ entry.course.id }}" class="form-control">
                                             {% for choice in frequency_choices %}
-                                                <option value="{{ choice }}">
+                                                <option value="{{ choice }}" {% if entry.frequency == choice %}selected{% endif %}>
                                                     {{ choice }}
                                                 </option>
                                             {% endfor %}
@@ -57,7 +57,7 @@
                                         <td>
                                             <select name="frequency-{{ entry.group.id }}-{{ entry.course.id }}" class="form-control">
                                                 {% for choice in frequency_choices %}
-                                                    <option value="{{ choice }}">
+                                                    <option value="{{ choice }}" {% if entry.frequency == choice %}selected{% endif %}>
                                                         {{ choice }}
                                                     </option>
                                                 {% endfor %}

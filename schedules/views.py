@@ -15,7 +15,8 @@ from SubjectFrequency.models import SubjectFrequency
 from datetime import timedelta, datetime
 import json
 from schedules.forms import ManualScheduleForm
-from django.db.models import Q
+from django.http import JsonResponse
+from time import sleep
 
 def schedule_list(request):
     schedules = Schedule.objects.all()  # Pobiera wszystkie obiekty Schedule z bazy danych
@@ -245,6 +246,7 @@ def automatic_schedule(request, institution_id):
     frequencies = SubjectFrequency.objects.filter(institution=institution)
     time_config = get_object_or_404(TimeConfiguration, institution=institution)
 
+    # Mapa dni tygodnia
     days_mapping = {
         'full': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
         'normal': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
@@ -259,38 +261,66 @@ def automatic_schedule(request, institution_id):
         schedules.delete()
 
         start_times = calculate_start_times(time_config)
+        existing_schedules = []
+        errors = []
+        total_tasks = frequencies.count()  # Liczba do przetworzenia
+        completed_tasks = 0
 
-        # Algorytm układania planu
         for freq in frequencies:
             group = freq.group
             course = freq.course
             teacher = course.teacher_set.first()  # Pierwszy nauczyciel przypisany do kursu
-            room = find_suitable_room(course, institution)
-            if not room or not teacher:
+            room = find_suitable_room(course, institution, group)
+
+            if not room:
+                errors.append(f"Brak dostępnych sal dla kursu {course.name} w grupie {group.name}.")
+                continue
+            if not teacher or not check_teacher_courses(teacher, course):
+                errors.append(f"Brak nauczyciela dla kursu {course.name}.")
                 continue
 
-            sessions_needed = int(freq.frequency * 2)  # Obliczamy liczbę sesji
-            week_types = ['weekly'] * (sessions_needed // 2) + ['odd', 'even'][:sessions_needed % 2]
+            # Oblicz liczbę zajęć na tydzień
+            weekly_sessions = int(freq.frequency)
+            biweekly_sessions = 1 if freq.frequency % 1 > 0 else 0
+            week_types = ['weekly'] * weekly_sessions
+            if biweekly_sessions:
+                week_types.append('odd' if len(week_types) % 2 == 0 else 'even')
 
-            for week_type in week_types:
-                for day in days:
-                    for start_time in start_times:
-                        end_time = (datetime.combine(datetime.today(), start_time) + time_config.lesson_duration).time()
-                        if not check_conflicts_auto(group, teacher, room, day, start_time, end_time, week_type,
-                                                    schedules):
-                            Schedule.objects.create(
+            # Dla każdej grupy tego samego poziomu (np. klasa czwarta A i czwarta B)
+            for subgroup in Group.objects.filter(level=group.level, institution=institution):
+                for week_type in week_types:
+                    placed = False
+                    for day in days:
+                        for start_time in start_times:
+                            end_time = (datetime.combine(datetime.today(), start_time) + time_config.lesson_duration).time()
+                            potential_schedule = Schedule(
                                 institution=institution,
-                                group=group,
+                                group=subgroup,
                                 course=course,
                                 teacher=teacher,
                                 room=room,
                                 week_type=week_type,
                                 day_of_week=day,
                                 start_time=start_time,
-                                end_time=end_time
+                                end_time=end_time,
                             )
+                            if not check_conflicts(potential_schedule, existing_schedules):
+                                potential_schedule.save()
+                                existing_schedules.append(potential_schedule)
+                                placed = True
+                                break
+                        if placed:
                             break
-        return redirect('plans')  # Po zakończeniu układania wracamy do listy planów
+                    if not placed:
+                        errors.append(f"Nie udało się umieścić kursu {course.name} w grupie {subgroup.name}.")
+
+            completed_tasks += 1
+
+        return JsonResponse({
+            'completed_tasks': completed_tasks,
+            'total_tasks': total_tasks,
+            'errors': errors,
+        })
 
     return render(request, 'schedules/automatic_schedule.html', {
         'institution': institution,
@@ -298,28 +328,10 @@ def automatic_schedule(request, institution_id):
     })
 
 
-def check_conflicts_auto(group, teacher, room, day, start_time, end_time, week_type, schedules):
-    """Rozszerzona funkcja sprawdzania konfliktów."""
-    for schedule in schedules:
-        if schedule.day_of_week == day and (
-                (schedule.group == group or
-                 schedule.teacher == teacher or
-                 schedule.room == room) and
-                start_time < schedule.end_time and end_time > schedule.start_time
-        ):
-            if (
-                    schedule.week_type == 'weekly' or
-                    week_type == 'weekly' or
-                    schedule.week_type == week_type
-            ):
-                return True
-    return False
-
-
-def find_suitable_room(course, institution):
-    """Znajdź odpowiednią salę."""
+def find_suitable_room(course, institution, group):
+    """Znajdź odpowiednią salę z uwzględnieniem wymagań kursu i pojemności."""
     rooms = Room.objects.filter(institution=institution)
     for room in rooms:
-        if check_room_requirements(course, room):
+        if check_room_requirements(course, room) and check_room_capacity(group, room):
             return room
     return None
