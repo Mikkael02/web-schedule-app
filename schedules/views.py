@@ -1,7 +1,6 @@
 from django.shortcuts import render
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
-from .forms import ScheduleForm
 from django.http import JsonResponse
 from group.models import Group
 from rooms.models import Room
@@ -18,78 +17,6 @@ from schedules.forms import ManualScheduleForm
 from django.http import JsonResponse
 from time import sleep
 
-def schedule_list(request):
-    schedules = Schedule.objects.all()  # Pobiera wszystkie obiekty Schedule z bazy danych
-    return render(request, 'schedules/schedule_list.html', {'schedules': schedules})
-
-def schedule_create(request):
-    if request.method == 'POST':
-        form = ScheduleForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('schedule_list')
-    else:
-        form = ScheduleForm()
-    return render(request, 'schedules/schedule_form.html', {'form': form})
-
-def schedule_detail(request, pk):
-    schedule = Schedule.objects.get(pk=pk)
-    return render(request, 'schedules/schedule_detail.html', {'schedule': schedule})
-
-def get_schedule_data(schedules):
-    week_type_display = {
-        'weekly': 'Co tydzień',
-        'even': 'Tygodnie parzyste',
-        'odd': 'Tygodnie nieparzyste'
-    }
-
-    course_type_display = {
-        'lecture': 'Wykład',
-        'lab': 'Lab',
-        'seminar': 'Seminarium',
-        'project': 'PRO',
-        'exercises': 'ĆW',
-        'sport': 'Ćwiczenia sportowe'
-    }
-
-    schedule_data = [
-        {
-            'course_type': course_type_display.get(schedule.course.course_type, schedule.course.course_type),
-            'week_type': week_type_display[schedule.week_type],
-            'room': schedule.room.name,
-            'room_id': schedule.room.id,
-            'course': schedule.course.name,
-            'teacher': f"{schedule.teacher.title} {schedule.teacher.first_name} {schedule.teacher.last_name}",
-            'teacher_id': schedule.teacher.id,
-            'group': f"{schedule.group.department.name} [{schedule.group.name}]" if schedule.group.department else schedule.group.name,
-            'group_id': schedule.group.id,
-            'day_of_week': schedule.day_of_week,
-            'start_time': schedule.start_time.strftime('%H:%M'),
-            'end_time': schedule.end_time.strftime('%H:%M')
-        } for schedule in schedules
-    ]
-    return schedule_data
-
-
-def get_schedule_for_group(request, group_id):
-    group = get_object_or_404(Group, id=group_id)
-    schedules = Schedule.objects.filter(group=group)
-    schedule_data = get_schedule_data(schedules)
-    return JsonResponse(schedule_data, safe=False)
-
-
-def get_schedule_for_room(request, room_id):
-    room = get_object_or_404(Room, id=room_id)
-    schedules = Schedule.objects.filter(room=room)
-    schedule_data = get_schedule_data(schedules)
-    return JsonResponse(schedule_data, safe=False)
-
-
-def get_schedule_for_teacher(request, teacher_id):
-    teacher = get_object_or_404(Teacher, id=teacher_id)
-    schedules = Schedule.objects.filter(teacher=teacher)
-    schedule_data = get_schedule_data(schedules)
-    return JsonResponse(schedule_data, safe=False)
 
 @login_required
 def generate_schedule(request, institution_id):
@@ -151,11 +78,12 @@ def manual_schedule(request, institution_id):
                 form.add_error(None, "Sala nie spełnia wymagań zajęć.")
             elif not check_teacher_courses(schedule.teacher, schedule.course):
                 form.add_error(None, "Nauczyciel nie może prowadzić wybranych zajęć.")
-            elif not check_room_capacity(schedule.group, schedule.room):
+            elif not all(check_room_capacity(group, schedule.room) for group in schedule.group.all()):
                 form.add_error(None, "Sala nie może pomieścić wszystkich uczniów.")
             else:
                 schedule.institution = institution
                 schedule.save()
+                form.cleaned_data.get('group').set(form.cleaned_data['group'])  # Przypisz grupy
                 return redirect('manual_schedule', institution_id=institution.id)
     else:
         form = ManualScheduleForm(institution=institution, start_times=start_times)
@@ -238,7 +166,6 @@ def check_room_requirements(course, room):
             all(eq in room.equipment.all() for eq in required_equipment)
     )
 
-
 @login_required
 def automatic_schedule(request, institution_id):
     institution = get_object_or_404(Institution, id=institution_id)
@@ -246,7 +173,6 @@ def automatic_schedule(request, institution_id):
     frequencies = SubjectFrequency.objects.filter(institution=institution)
     time_config = get_object_or_404(TimeConfiguration, institution=institution)
 
-    # Mapa dni tygodnia
     days_mapping = {
         'full': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
         'normal': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
@@ -257,37 +183,38 @@ def automatic_schedule(request, institution_id):
         selected_days = request.POST.get('days', 'normal')
         days = days_mapping[selected_days]
 
-        # Czyścimy stare zajęcia
         schedules.delete()
 
         start_times = calculate_start_times(time_config)
         existing_schedules = []
         errors = []
-        total_tasks = frequencies.count()  # Liczba do przetworzenia
+        total_tasks = frequencies.count()
         completed_tasks = 0
 
         for freq in frequencies:
-            group = freq.group
+            main_group = freq.group  # Główna grupa
             course = freq.course
-            teacher = course.teacher_set.first()  # Pierwszy nauczyciel przypisany do kursu
-            room = find_suitable_room(course, institution, group)
+            teacher = course.teacher_set.first()  # Pobieramy nauczyciela przypisanego do kursu
+            room = find_suitable_room(course, institution, main_group)
 
             if not room:
-                errors.append(f"Brak dostępnych sal dla kursu {course.name} w grupie {group.name}.")
+                errors.append(f"Brak dostępnych sal dla kursu {course.name} w grupie {main_group.name}.")
                 continue
             if not teacher or not check_teacher_courses(teacher, course):
                 errors.append(f"Brak nauczyciela dla kursu {course.name}.")
                 continue
 
-            # Oblicz liczbę zajęć na tydzień
-            weekly_sessions = int(freq.frequency)
-            biweekly_sessions = 1 if freq.frequency % 1 > 0 else 0
-            week_types = ['weekly'] * weekly_sessions
-            if biweekly_sessions:
-                week_types.append('odd' if len(week_types) % 2 == 0 else 'even')
+            # Pobieramy grupy współdzielące zajęcia
+            shared_groups = list(freq.shared_groups.all())
+            if shared_groups:
+                # Tworzymy jedno zajęcia dla grup wspólnych
+                participating_groups = shared_groups + [main_group]
+                weekly_sessions = int(freq.frequency)
+                biweekly_sessions = 1 if freq.frequency % 1 > 0 else 0
+                week_types = ['weekly'] * weekly_sessions
+                if biweekly_sessions:
+                    week_types.append('odd' if len(week_types) % 2 == 0 else 'even')
 
-            # Dla każdej grupy tego samego poziomu (np. klasa czwarta A i czwarta B)
-            for subgroup in Group.objects.filter(level=group.level, institution=institution):
                 for week_type in week_types:
                     placed = False
                     for day in days:
@@ -295,7 +222,6 @@ def automatic_schedule(request, institution_id):
                             end_time = (datetime.combine(datetime.today(), start_time) + time_config.lesson_duration).time()
                             potential_schedule = Schedule(
                                 institution=institution,
-                                group=subgroup,
                                 course=course,
                                 teacher=teacher,
                                 room=room,
@@ -304,15 +230,69 @@ def automatic_schedule(request, institution_id):
                                 start_time=start_time,
                                 end_time=end_time,
                             )
-                            if not check_conflicts(potential_schedule, existing_schedules):
-                                potential_schedule.save()
-                                existing_schedules.append(potential_schedule)
+                            if not check_conflicts_for_shared(potential_schedule, participating_groups, existing_schedules):
+                                schedule = Schedule.objects.create(
+                                    institution=institution,
+                                    course=course,
+                                    teacher=teacher,
+                                    room=room,
+                                    week_type=week_type,
+                                    day_of_week=day,
+                                    start_time=start_time,
+                                    end_time=end_time,
+                                )
+                                schedule.group.set(participating_groups)
+                                existing_schedules.append(schedule)
                                 placed = True
                                 break
                         if placed:
                             break
                     if not placed:
-                        errors.append(f"Nie udało się umieścić kursu {course.name} w grupie {subgroup.name}.")
+                        errors.append(f"Nie udało się umieścić kursu {course.name} dla grupy wspólnej: {', '.join([g.name for g in participating_groups])}.")
+            else:
+                # Tworzymy zajęcia osobno dla każdej grupy na tym samym poziomie
+                all_groups = Group.objects.filter(level=main_group.level, institution=institution)
+                for individual_group in all_groups:
+                    weekly_sessions = int(freq.frequency)
+                    biweekly_sessions = 1 if freq.frequency % 1 > 0 else 0
+                    week_types = ['weekly'] * weekly_sessions
+                    if biweekly_sessions:
+                        week_types.append('odd' if len(week_types) % 2 == 0 else 'even')
+
+                    for week_type in week_types:
+                        placed = False
+                        for day in days:
+                            for start_time in start_times:
+                                end_time = (datetime.combine(datetime.today(), start_time) + time_config.lesson_duration).time()
+                                potential_schedule = Schedule(
+                                    institution=institution,
+                                    course=course,
+                                    teacher=teacher,
+                                    room=room,
+                                    week_type=week_type,
+                                    day_of_week=day,
+                                    start_time=start_time,
+                                    end_time=end_time,
+                                )
+                                if not check_conflicts_for_shared(potential_schedule, [individual_group], existing_schedules):
+                                    schedule = Schedule.objects.create(
+                                        institution=institution,
+                                        course=course,
+                                        teacher=teacher,
+                                        room=room,
+                                        week_type=week_type,
+                                        day_of_week=day,
+                                        start_time=start_time,
+                                        end_time=end_time,
+                                    )
+                                    schedule.group.set([individual_group])
+                                    existing_schedules.append(schedule)
+                                    placed = True
+                                    break
+                            if placed:
+                                break
+                        if not placed:
+                            errors.append(f"Nie udało się umieścić kursu {course.name} w grupie {individual_group.name}.")
 
             completed_tasks += 1
 
@@ -335,3 +315,21 @@ def find_suitable_room(course, institution, group):
         if check_room_requirements(course, room) and check_room_capacity(group, room):
             return room
     return None
+
+
+def check_conflicts_for_shared(new_schedule, groups, existing_schedules):
+    """Sprawdź konflikty dla zajęć współdzielonych."""
+    for schedule in existing_schedules:
+        if schedule.day_of_week == new_schedule.day_of_week and (
+                (any(group in schedule.group.all() for group in groups) or
+                 schedule.teacher == new_schedule.teacher or
+                 schedule.room == new_schedule.room) and
+                new_schedule.start_time < schedule.end_time and new_schedule.end_time > schedule.start_time
+        ):
+            if (
+                    schedule.week_type == 'weekly' or
+                    new_schedule.week_type == 'weekly' or
+                    schedule.week_type == new_schedule.week_type
+            ):
+                return True
+    return False

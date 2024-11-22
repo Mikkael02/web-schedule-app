@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
                 ('start_time', models.TimeField(default='14:00')),
                 ('end_time', models.TimeField(default='15:30')),
                 ('course', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='course.course')),
-                ('group', models.ForeignKey(default=schedules.models.get_default_group, on_delete=django.db.models.deletion.CASCADE, to='group.group')),
+                ('group', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='group.group')),
                 ('institution', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='schedules', to='institutions.institution')),
                 ('room', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rooms.room')),
             ],

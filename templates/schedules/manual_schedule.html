@@ -32,7 +32,11 @@
             {% for schedule in schedules %}
                 <tr>
                     <td>{{ schedule.course.name }}</td>
-                    <td>{{ schedule.group.name }}</td>
+                    <td>
+                        {% for group in schedule.group.all %}
+                            {{ group.name }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
                     <td>{{ schedule.room.name }}</td>
                     <td>{{ schedule.teacher }}</td>
                     <td>{{ schedule.get_day_of_week_display }}</td>

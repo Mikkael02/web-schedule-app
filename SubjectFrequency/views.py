@@ -14,10 +14,9 @@ def define_subject_frequency(request, institution_id):
     institution = get_object_or_404(Institution, id=institution_id)
     institution_type = institution.type
 
-    # Przygotowanie danych do wyświetlenia
     grouped_forms = {}
     frequencies = SubjectFrequency.objects.filter(institution=institution)
-    frequency_map = {(sf.group.id, sf.course.id): sf.frequency for sf in frequencies}
+    frequency_map = {(sf.group.id, sf.course.id): sf for sf in frequencies}
 
     if institution_type == 'primary':
         groups = Group.objects.filter(institution=institution).order_by('level')
@@ -26,7 +25,7 @@ def define_subject_frequency(request, institution_id):
                 {
                     'group': group,
                     'course': course,
-                    'frequency': frequency_map.get((group.id, course.id), 0)
+                    'frequency': frequency_map.get((group.id, course.id), None),
                 }
                 for course in Course.objects.filter(institution=institution)
             ]
@@ -39,7 +38,7 @@ def define_subject_frequency(request, institution_id):
                     {
                         'group': group,
                         'course': course,
-                        'frequency': frequency_map.get((group.id, course.id), 0)
+                        'frequency': frequency_map.get((group.id, course.id), None),
                     }
                     for course in Course.objects.filter(institution=institution)
                 ]
@@ -52,13 +51,13 @@ def define_subject_frequency(request, institution_id):
                     {
                         'group': group,
                         'course': course,
-                        'frequency': frequency_map.get((group.id, course.id), 0)
+                        'frequency': frequency_map.get((group.id, course.id), None),
                     }
                     for course in Course.objects.filter(institution=institution)
                 ]
 
     if request.method == 'POST':
-        frequencies = []
+        SubjectFrequency.objects.filter(institution=institution).delete()
         for key, value in request.POST.items():
             if key.startswith("frequency-"):
                 try:
@@ -66,20 +65,18 @@ def define_subject_frequency(request, institution_id):
                     frequency = float(value)
                     group = Group.objects.get(id=group_id)
                     course = Course.objects.get(id=course_id)
-                    frequencies.append(SubjectFrequency(
+                    shared_groups = request.POST.getlist(f"shared-{group_id}-{course_id}")
+                    sf = SubjectFrequency.objects.create(
                         institution=institution,
                         group=group,
                         course=course,
-                        frequency=frequency
-                    ))
+                        frequency=frequency,
+                    )
+                    if shared_groups:
+                        sf.shared_groups.set(Group.objects.filter(id__in=shared_groups))
                 except Exception as e:
                     print(f"Błąd przetwarzania danych: {e}")
-        if frequencies:
-            SubjectFrequency.objects.filter(institution=institution).delete()
-            SubjectFrequency.objects.bulk_create(frequencies)
-            return redirect('automatic_schedule', institution_id=institution_id)
-        else:
-            print("Nie znaleziono żadnych danych do zapisania")
+        return redirect('automatic_schedule', institution_id=institution_id)
 
     frequency_choices = [0] + [round(x * 0.5, 1) for x in range(1, 21)]
 
@@ -87,4 +84,5 @@ def define_subject_frequency(request, institution_id):
         'institution': institution,
         'grouped_forms': grouped_forms,
         'frequency_choices': frequency_choices,
+        'groups': Group.objects.filter(institution=institution),
     })

@@ -5,10 +5,6 @@ from course.models import Course
 from group.models import Group
 from institutions.models import Institution
 
-def get_default_group():
-    default_group = Group.objects.get_or_create(name="Default Group")[0]
-    return default_group.id
-
 class Schedule(models.Model):
     WEEK_TYPE_CHOICES = (
         ('weekly', 'Co tydzień'),
@@ -17,7 +13,7 @@ class Schedule(models.Model):
     )
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='schedules', null=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE, default=get_default_group)
+    group = models.ManyToManyField(Group)  # Pozostawiamy nazwę "group"
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     week_type = models.CharField(max_length=10, choices=WEEK_TYPE_CHOICES, default='weekly')
@@ -38,4 +34,4 @@ class Schedule(models.Model):
     end_time = models.TimeField(default='15:30')
 
     def __str__(self):
-        return f"{self.course} in {self.room} by {self.teacher} for {self.group} on {self.day_of_week} from {self.start_time} to {self.end_time}"
+        return f"{self.course} in {self.room} by {self.teacher} for {self.group.all()} on {self.day_of_week} from {self.start_time} to {self.end_time}"
