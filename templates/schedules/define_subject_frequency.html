@@ -39,7 +39,7 @@
                                     </td>
                                     <td>
                                         <div class="form-check">
-                                            {% for group in groups %}
+                                            {% for group in entry.available_groups %}
                                                 <input class="form-check-input" type="checkbox"
                                                        id="shared-{{ entry.group.id }}-{{ entry.course.id }}-{{ group.id }}"
                                                        name="shared-{{ entry.group.id }}-{{ entry.course.id }}"
@@ -81,7 +81,7 @@
                                         </td>
                                         <td>
                                             <div class="form-check">
-                                                {% for group in groups %}
+                                                {% for group in entry.available_groups %}
                                                     <input class="form-check-input" type="checkbox"
                                                            id="shared-{{ entry.group.id }}-{{ entry.course.id }}-{{ group.id }}"
                                                            name="shared-{{ entry.group.id }}-{{ entry.course.id }}"

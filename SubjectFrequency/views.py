@@ -26,35 +26,44 @@ def define_subject_frequency(request, institution_id):
                     'group': group,
                     'course': course,
                     'frequency': frequency_map.get((group.id, course.id), None),
+                    'available_groups': groups.filter(level=group.level)
                 }
                 for course in Course.objects.filter(institution=institution)
             ]
+
     elif institution_type == 'secondary':
         departments = Department.objects.filter(institution=institution)
         for department in departments:
+            department_groups = Group.objects.filter(department=department).order_by('level')
             grouped_forms[department.name] = {}
-            for group in Group.objects.filter(department=department).order_by('level'):
+            for group in department_groups:
                 grouped_forms[department.name][f"Klasa {group.level}"] = [
                     {
                         'group': group,
                         'course': course,
                         'frequency': frequency_map.get((group.id, course.id), None),
+                        'available_groups': department_groups.filter(level=group.level)
                     }
                     for course in Course.objects.filter(institution=institution)
                 ]
+
     elif institution_type == 'higher':
         departments = Department.objects.filter(faculty__institution=institution)
         for department in departments:
+            department_groups = Group.objects.filter(department=department).order_by('level')
             grouped_forms[department.name] = {}
-            for group in Group.objects.filter(department=department).order_by('level'):
+            for group in department_groups:
                 grouped_forms[department.name][f"Semestr {group.level}"] = [
                     {
                         'group': group,
                         'course': course,
                         'frequency': frequency_map.get((group.id, course.id), None),
+                        'available_groups': department_groups.filter(level=group.level)
                     }
                     for course in Course.objects.filter(institution=institution)
                 ]
+
+    print("Grouped Forms:", grouped_forms)  # DEBUG: Wydrukuj pełną strukturę grouped_forms
 
     if request.method == 'POST':
         SubjectFrequency.objects.filter(institution=institution).delete()
@@ -84,5 +93,4 @@ def define_subject_frequency(request, institution_id):
         'institution': institution,
         'grouped_forms': grouped_forms,
         'frequency_choices': frequency_choices,
-        'groups': Group.objects.filter(institution=institution),
     })
