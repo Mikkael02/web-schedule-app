@@ -41,7 +41,7 @@
                                         <div class="form-check">
                                             {% for group in entry.available_groups %}
                                                 <input class="form-check-input" type="checkbox"
-                                                       id="shared-{{ entry.group.id }}-{{ entry.course.id }}-{{ group.id }}"
+                                                       id="shared-{{ entry.group.id }}-{{ entry.course.id }}-{{ group.id }}-{{ forloop.counter }}"
                                                        name="shared-{{ entry.group.id }}-{{ entry.course.id }}"
                                                        value="{{ group.id }}"
                                                        {% if entry.frequency and group in entry.frequency.shared_groups.all %}checked{% endif %}>

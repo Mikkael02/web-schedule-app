@@ -71,6 +71,8 @@ def manual_schedule(request, institution_id):
                 time_config.lesson_duration
             ).time()
 
+            selected_groups = form.cleaned_data['group']
+
             # Walidacja konfliktów i wymagań sali oraz nauczyciela
             if check_conflicts(schedule, schedules):
                 form.add_error(None, "Konflikt z istniejącymi zajęciami.")
@@ -78,12 +80,12 @@ def manual_schedule(request, institution_id):
                 form.add_error(None, "Sala nie spełnia wymagań zajęć.")
             elif not check_teacher_courses(schedule.teacher, schedule.course):
                 form.add_error(None, "Nauczyciel nie może prowadzić wybranych zajęć.")
-            elif not all(check_room_capacity(group, schedule.room) for group in schedule.group.all()):
+            elif not check_room_capacity(selected_groups, schedule.room):
                 form.add_error(None, "Sala nie może pomieścić wszystkich uczniów.")
             else:
                 schedule.institution = institution
                 schedule.save()
-                form.cleaned_data.get('group').set(form.cleaned_data['group'])  # Przypisz grupy
+                schedule.group.set(selected_groups)  # Przypisz grupy
                 return redirect('manual_schedule', institution_id=institution.id)
     else:
         form = ManualScheduleForm(institution=institution, start_times=start_times)
@@ -131,10 +133,9 @@ def calculate_start_times(time_config):
 def check_conflicts(new_schedule, existing_schedules):
     """Sprawdź czy nowy harmonogram koliduje z istniejącymi zajęciami, uwzględniając typ tygodnia."""
     for schedule in existing_schedules:
-        # Sprawdzenie konfliktu na poziomie grupy, sali lub nauczyciela
+        # Sprawdzenie konfliktu na poziomie sali lub nauczyciela
         if (
-            (schedule.group == new_schedule.group or
-             schedule.room == new_schedule.room or
+            (schedule.room == new_schedule.room or
              schedule.teacher == new_schedule.teacher) and
             schedule.day_of_week == new_schedule.day_of_week and
             not (new_schedule.start_time >= schedule.end_time or new_schedule.end_time <= schedule.start_time)
