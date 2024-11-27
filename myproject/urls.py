@@ -28,7 +28,7 @@ urlpatterns = [
     path('institutions/', include('institutions.urls')),
     path('', include('faculty.urls')),
     path('', include('institutions.urls')),
-    path('accounts/', include('accounts.urls')),
+    path('konto/', include('accounts.urls')),
     path('api/', include('schedules.urls')),
     path('', TemplateView.as_view(template_name='home.html'), name='home'),
     path('room_types/', include('room_types.urls')),

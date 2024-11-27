@@ -1,23 +1,32 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
+from .forms import CustomUserCreationForm, UserUpdateForm, CustomPasswordChangeForm
 from institutions.models import Institution
 from django.shortcuts import get_object_or_404
+from django.contrib.auth import update_session_auth_hash
 
 def register(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
             messages.success(request, 'Rejestracja zakończona sukcesem.')
             return redirect('home')
     else:
-        form = UserCreationForm()
+        form = CustomUserCreationForm()
     return render(request, 'accounts/register.html', {'form': form})
+
+@login_required
+def delete_account_confirm(request):
+    if request.method == 'POST':
+        user = request.user
+        user.delete()
+        messages.success(request, "Twoje konto zostało usunięte.")
+        return redirect('home')
+    return render(request, 'accounts/delete_account_confirm.html')
 
 @login_required
 def profile(request):
@@ -25,7 +34,29 @@ def profile(request):
 
 @login_required
 def settings(request):
-    return render(request, 'accounts/settings.html')
+    if request.method == 'POST':
+        user_form = UserUpdateForm(request.POST, instance=request.user)
+        password_form = CustomPasswordChangeForm(user=request.user, data=request.POST)
+
+        if user_form.is_valid():
+            user_form.save()
+            messages.success(request, "Twoje dane zostały zaktualizowane.")
+            return redirect('settings')
+        elif password_form.is_valid():
+            password_form.save()
+            update_session_auth_hash(request, password_form.user)
+            messages.success(request, "Hasło zostało zmienione.")
+            return redirect('settings')
+        else:
+            messages.error(request, "Wystąpił błąd podczas aktualizacji danych.")
+    else:
+        user_form = UserUpdateForm(instance=request.user)
+        password_form = CustomPasswordChangeForm(user=request.user)
+
+    return render(request, 'accounts/settings.html', {
+        'user_form': user_form,
+        'password_form': password_form
+    })
 
 @login_required
 def plans(request):

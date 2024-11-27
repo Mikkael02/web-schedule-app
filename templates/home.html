@@ -190,7 +190,7 @@
     <script>
         const messages = [
             "Zarejestruj się klikając zielony przycisk Załóż Konto, bądź w prawym górnym rogu przycisk Zarejestruj się.",
-            "Jeśli nie jesteś pewny działania danej funkcjonalności poszukuj symbolu i <i class='fas fa-info-circle info-icon'></i>."
+            "W przypadku braku pewności działania danej funkcjonalności poszukuj symbolu:   <i class='fas fa-info-circle info-icon'></i>"
         ];
 
         let currentMessage = 0;
@@ -198,7 +198,7 @@
         setInterval(() => {
             currentMessage = (currentMessage + 1) % messages.length;
             document.getElementById("messages").innerHTML = `<p>${messages[currentMessage]}</p>`;
-        }, 10000);
+        }, 8000);
     </script>
 </body>
 </html>
