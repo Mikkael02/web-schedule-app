@@ -29,7 +29,6 @@ class CustomUserCreationForm(UserCreationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Zmiana etykiet i komunikatów pomocniczych dla pól
         self.fields['password1'].label = _("Hasło")
         self.fields['password1'].help_text = _(
             "Twoje hasło musi zawierać co najmniej 8 znaków, nie może być zbyt podobne "
@@ -38,14 +37,10 @@ class CustomUserCreationForm(UserCreationForm):
         self.fields['password2'].label = _("Potwierdzenie hasła")
         self.fields['password2'].help_text = _("Wprowadź to samo hasło ponownie w celu weryfikacji.")
 
-        # Dodanie klasy CSS do wszystkich pól
         for fieldname, field in self.fields.items():
             field.widget.attrs.update({'class': 'form-control'})
 
     def clean_password2(self):
-        """
-        Sprawdza, czy oba pola haseł są zgodne.
-        """
         password1 = self.cleaned_data.get('password1')
         password2 = self.cleaned_data.get('password2')
 

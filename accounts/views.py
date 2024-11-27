@@ -68,17 +68,42 @@ def create_plan(request):
     if request.method == 'POST':
         name = request.POST.get('name')
         institution_type = request.POST.get('type')
+        location = request.POST.get('location')
         logo = request.FILES.get('logo')
 
-        if not name or not institution_type:
+        if not name or not institution_type or not location:
             messages.error(request, 'Proszę wypełnić wszystkie wymagane pola.')
             return render(request, 'accounts/create_plan.html')
 
-        Institution.objects.create(name=name, type=institution_type, logo=logo, owner=request.user)
+        Institution.objects.create(name=name, type=institution_type, location=location, logo=logo, owner=request.user)
         messages.success(request, 'Plan został pomyślnie utworzony.')
         return redirect('plans')
 
     return render(request, 'accounts/create_plan.html')
+
+@login_required
+def edit_plan(request, plan_id):
+    plan = get_object_or_404(Institution, id=plan_id, owner=request.user)
+
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        institution_type = request.POST.get('type')
+        location = request.POST.get('location')
+        logo = request.FILES.get('logo')
+
+        if not name or not institution_type:
+            messages.error(request, 'Proszę wypełnić wszystkie wymagane pola.')
+        else:
+            plan.name = name
+            plan.type = institution_type
+            plan.location = location
+            if logo:
+                plan.logo = logo
+            plan.save()
+            messages.success(request, 'Plan został zaktualizowany.')
+            return redirect('plans')
+
+    return render(request, 'accounts/edit_plan.html', {'plan': plan})
 
 @login_required
 def plan_detail(request, plan_id):

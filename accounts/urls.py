@@ -2,7 +2,6 @@ from django.urls import path
 from . import views
 from django.contrib.auth import views as auth_views
 from .forms import CustomAuthenticationForm
-from .views import delete_account_confirm
 
 urlpatterns = [
     path(
@@ -17,8 +16,9 @@ urlpatterns = [
     path('rejestracja/', views.register, name='register'),
     path('profil/', views.profile, name='profile'),
     path('ustawienia/', views.settings, name='settings'),
-    path('usun-konto/', delete_account_confirm, name='delete_account'),
+    path('usun-konto/', views.delete_account_confirm, name='delete_account'),
     path('plany/', views.plans, name='plans'),
     path('utworz_plan/', views.create_plan, name='create_plan'),
+    path('edit-plan/<int:plan_id>/', views.edit_plan, name='edit_plan'),
     path('plan/<int:plan_id>/', views.plan_detail, name='plan_detail'),
 ]

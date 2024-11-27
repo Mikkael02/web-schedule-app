@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,69 +7,222 @@
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="container mt-4">
-    <h1>{{ plan.name }}</h1>
-    <p><strong>Typ:</strong> {{ plan.get_type_display }}</p>
-    <p><strong>Lokalizacja:</strong> {{ plan.location }}</p>
-    {% if plan.logo %}
-        <p><strong>Logo:</strong></p>
-        <img src="{{ plan.logo.url }}" alt="Logo {{ plan.name }}" style="max-width: 200px;">
-    {% endif %}
 
-    <h2>Opcje konfiguracji:</h2>
-    <ul>
-        {% if plan.type == 'higher' %}
-            <li><a href="{% url 'manage_faculties' plan.id %}">Zarządzaj wydziałami</a></li>
-            <li><a href="{% url 'manage_departments' plan.id %}">Zarządzaj kierunkami</a></li>
-            <li><a href="{% url 'manage_rooms' plan.id %}">Zarządzaj salami</a></li>
-            <li><a href="{% url 'manage_groups' plan.id %}">Zarządzaj grupami</a></li>
-            <li><a href="{% url 'manage_teachers' plan.id %}">Zarządzaj wykładowcami</a></li>
-            <li><a href="{% url 'manage_courses' plan.id %}">Zarządzaj zajęciami</a></li>
-        {% elif plan.type == 'secondary' %}
-            <li><a href="{% url 'manage_departments' plan.id %}">Zarządzaj profilami</a></li>
-            <li><a href="{% url 'manage_rooms' plan.id %}">Zarządzaj salami</a></li>
-            <li><a href="{% url 'manage_groups' plan.id %}">Zarządzaj klasami</a></li>
-            <li><a href="{% url 'manage_teachers' plan.id %}">Zarządzaj nauczycielami</a></li>
-            <li><a href="{% url 'manage_courses' plan.id %}">Zarządzaj zajęciami</a></li>
-        {% elif plan.type == 'primary' %}
-            <li><a href="{% url 'manage_rooms' plan.id %}">Zarządzaj salami</a></li>
-            <li><a href="{% url 'manage_groups' plan.id %}">Zarządzaj klasami</a></li>
-            <li><a href="{% url 'manage_teachers' plan.id %}">Zarządzaj nauczycielami</a></li>
-            <li><a href="{% url 'manage_courses' plan.id %}">Zarządzaj zajęciami</a></li>
-        {% endif %}
-    </ul>
-
-    <!-- Nowy przycisk do układania planu -->
-    <a href="{% url 'generate_schedule' plan.id %}" class="btn btn-success mt-3">
-        <i class="fas fa-calendar-alt"></i> Układaj Plan
-    </a>
-
-    <!-- Przycisk do wyświetlenia planu -->
-    <a href="{% url 'view_plan' plan.id %}" target="_blank" class="btn btn-primary mt-3">
-        <i class="fas fa-eye"></i> Wyświetl Plan
-    </a>
-
-    <!-- Przycisk do usunięcia instytucji z potwierdzeniem -->
-    <form method="post" action="{% url 'delete_plan' plan.id %}" class="mt-3" onsubmit="return confirmDelete();">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-danger">
-            <i class="fas fa-trash-alt"></i> Usuń Instytucję
-        </button>
-    </form>
-
-    <!-- Przycisk powrotu -->
-    <a href="{% url 'plans' %}" class="btn btn-secondary mt-3">
-        <i class="fas fa-arrow-left"></i> Powrót do listy planów
-    </a>
-
-    <!-- Bootstrap JS and dependencies -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function confirmDelete() {
-            return confirm('Czy na pewno chcesz usunąć tę instytucję?');
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to right, #2b5876, #4e4376);
+            color: #fff;
+            padding-top: 4rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
-    </script>
+
+        .navbar {
+            background: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .container {
+            max-width: 800px;
+            margin-top: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            position: relative; /* Aby tooltip mógł się odpowiednio pozycjonować */
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #74ebd5, #acb6e5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tooltip-container {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            cursor: pointer;
+        }
+
+        .tooltip-container .tooltip-text {
+            visibility: hidden;
+            width: 300px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            text-align: center;
+            border-radius: 5px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            top: -10px;
+            right: 40px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 14px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .tooltip-container .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: -10px;
+            transform: translateY(-50%);
+            border-width: 5px;
+            border-style: solid;
+            border-color: transparent rgba(0, 0, 0, 0.8) transparent transparent;
+        }
+
+        .info-icon {
+            color: #ffc107;
+            font-size: 1.5rem;
+        }
+
+        .list-group-item {
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            cursor: pointer;
+            border: none;
+        }
+
+        .list-group-item:hover {
+            transform: scale(1.05);
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .list-group-item a {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            width: 100%;
+            height: 100%;
+        }
+
+        .btn {
+            border-radius: 50px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .btn-secondary {
+            width: 100%;
+        }
+
+        .config-header {
+            color: #74ebd5;
+            font-size: 1.3rem; /* Większa czcionka dla wyrazistości */
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            background: #74ebd5;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container-fluid">
+            <span class="navbar-brand">Szczegóły Planu</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user"></i> {{ user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="userMenu">
+                                <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="fas fa-user-circle"></i> Profil</a></li>
+                                <li><a class="dropdown-item" href="{% url 'plans' %}"><i class="fas fa-calendar-alt"></i> Moje Plany</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item"><i class="fas fa-sign-out-alt"></i> Wyloguj się</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2>{{ plan.name }}</h2>
+
+        <div class="tooltip-container">
+            Dodatkowe informacje: <i class="fas fa-info-circle info-icon"></i>
+            <div class="tooltip-text">
+                W tym miejscu musisz przejść przez konfigurację wszystkich elementów wchodzących w skład twojego planu.
+                Zaleca się konfigurację opcji od góry do dołu, gdyż niektóre z opcji konfigurowanych niżej, wymagają skonfigurowanych opcji wyżej.
+                Po zakończeniu konfiguracji wszystkich opcji możesz przejść do opcji układania planu.
+            </div>
+        </div>
+
+        <h3 class="config-header">
+            <i class="fas fa-cogs"></i> Opcje konfiguracji <i class="fas fa-cogs"></i>
+        </h3>
+
+
+        <ul class="list-group">
+            {% if plan.type == 'higher' %}
+                <li class="list-group-item"><a href="{% url 'manage_faculties' plan.id %}"><i class="fas fa-university"></i> Zarządzaj wydziałami</a></li>
+                <li class="list-group-item"><a href="{% url 'manage_departments' plan.id %}"><i class="fas fa-graduation-cap"></i> Zarządzaj kierunkami</a></li>
+                <li class="list-group-item"><a href="{% url 'manage_courses' plan.id %}"><i class="fas fa-book"></i> Zarządzaj zajęciami</a></li>
+                <li class="list-group-item"><a href="{% url 'manage_rooms' plan.id %}"><i class="fas fa-door-closed"></i> Zarządzaj salami</a></li>
+                <li class="list-group-item"><a href="{% url 'manage_groups' plan.id %}"><i class="fas fa-users"></i> Zarządzaj grupami</a></li>
+                <li class="list-group-item"><a href="{% url 'manage_teachers' plan.id %}"><i class="fas fa-chalkboard-teacher"></i> Zarządzaj wykładowcami</a></li>
+            {% elif plan.type == 'secondary' %}
+                <li class="list-group-item"><a href="{% url 'manage_departments' plan.id %}"><i class="fas fa-stream"></i> Zarządzaj profilami</a></li>
+                <li class="list-group-item"><a href="{% url 'manage_courses' plan.id %}"><i class="fas fa-book"></i> Zarządzaj zajęciami</a></li>
+                <li class="list-group-item"><a href="{% url 'manage_rooms' plan.id %}"><i class="fas fa-door-closed"></i> Zarządzaj salami</a></li>
+                <li class="list-group-item"><a href="{% url 'manage_groups' plan.id %}"><i class="fas fa-users"></i> Zarządzaj klasami</a></li>
+                <li class="list-group-item"><a href="{% url 'manage_teachers' plan.id %}"><i class="fas fa-chalkboard-teacher"></i> Zarządzaj nauczycielami</a></li>
+            {% elif plan.type == 'primary' %}
+                <li class="list-group-item"><a href="{% url 'manage_courses' plan.id %}"><i class="fas fa-book"></i> Zarządzaj zajęciami</a></li>
+                <li class="list-group-item"><a href="{% url 'manage_rooms' plan.id %}"><i class="fas fa-door-closed"></i> Zarządzaj salami</a></li>
+                <li class="list-group-item"><a href="{% url 'manage_groups' plan.id %}"><i class="fas fa-users"></i> Zarządzaj klasami</a></li>
+                <li class="list-group-item"><a href="{% url 'manage_teachers' plan.id %}"><i class="fas fa-chalkboard-teacher"></i> Zarządzaj nauczycielami</a></li>
+            {% endif %}
+        </ul>
+
+        <div class="text-center">
+            <a href="{% url 'generate_schedule' plan.id %}" class="btn btn-success"><i class="fas fa-calendar-alt"></i> Układaj Plan</a>
+            <a href="{% url 'view_plan' plan.id %}" target="_blank" class="btn btn-primary"><i class="fas fa-eye"></i> Wyświetl Plan</a>
+            <a href="{% url 'plans' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Powrót do listy planów</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

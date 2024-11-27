@@ -13,6 +13,8 @@ from .forms import GroupForm, TeacherForm
 from rooms.models import Room, RoomType, Equipment
 from course.models import Course
 from .forms import RoomForm, CourseForm, DepartmentForm, FacultyForm
+import os
+from django.conf import settings
 
 def higher_education_view(request, institution_id):
     institution = get_object_or_404(Institution, pk=institution_id)
@@ -91,9 +93,18 @@ def view_plan(request, plan_id):
 
     return render(request, template_name, context)
 
+
 @login_required
 def delete_plan(request, plan_id):
     plan = get_object_or_404(Institution, id=plan_id, owner=request.user)
+
+    # Usuń logo, jeśli istnieje
+    if plan.logo:
+        logo_path = os.path.join(settings.MEDIA_ROOT, plan.logo.name)
+        if os.path.isfile(logo_path):
+            os.remove(logo_path)
+
+    # Usuń obiekt planu
     plan.delete()
     return redirect('plans')
 
